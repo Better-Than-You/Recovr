@@ -1,6 +1,9 @@
+import { useState, Fragment } from 'react'
 import { Bell, Search, Settings, HelpCircle, User } from 'lucide-react'
 import { Button } from './ui/button'
 import { Badge } from './ui/badge'
+import { NotificationModal } from './NotificationModal'
+import { mockNotifications, type Notification } from '@/data/mockData'
 
 type Role = 'fedex' | 'dca'
 
@@ -9,7 +12,24 @@ interface NavbarProps {
 }
 
 export function Navbar({ currentRole }: NavbarProps) {
+  const [isNotificationOpen, setIsNotificationOpen] = useState(false)
+  const [notifications, setNotifications] = useState<Notification[]>(mockNotifications)
+
+  const unreadCount = notifications.filter(n => !n.read).length
+
+  const handleMarkAsRead = (notificationId: string) => {
+    setNotifications(prev =>
+      prev.map(n => n.id === notificationId ? { ...n, read: true } : n)
+    )
+  }
+
+  const handleNotificationClick = (notification: Notification) => {
+    // Additional logic can be added here if needed
+    console.log('Notification clicked:', notification)
+  }
+
   return (
+    <>
     <header className="sticky top-0 z-40 w-full border-b border-slate-200 bg-white/95 backdrop-blur supports-backdrop-filter:bg-white/60">
       <div className="flex h-20 items-center justify-between px-8 gap-6">
         {/* Left - Search Bar */}
@@ -32,9 +52,21 @@ export function Navbar({ currentRole }: NavbarProps) {
           </Button>
 
           {/* Notifications */}
-          <Button variant="ghost" size="icon" className="h-10 w-10 relative">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="h-10 w-10 relative"
+            onClick={() => setIsNotificationOpen(true)}
+          >
             <Bell className="h-5 w-5" />
-            <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-red-500" />
+            {unreadCount > 0 && (
+              <>
+                <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-red-500" />
+                <span className="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-medium text-white">
+                  {unreadCount}
+                </span>
+              </>
+            )}
           </Button>
 
           {/* Settings */}
@@ -62,5 +94,15 @@ export function Navbar({ currentRole }: NavbarProps) {
         </div>
       </div>
     </header>
+
+    {/* Notification Modal */}
+    <NotificationModal
+      isOpen={isNotificationOpen}
+      onClose={() => setIsNotificationOpen(false)}
+      notifications={notifications}
+      onNotificationClick={handleNotificationClick}
+      onMarkAsRead={handleMarkAsRead}
+    />
+    </>
   )
 }
