@@ -1,6 +1,7 @@
-import { useState } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { useAuthStore } from '@/stores'
 import { Layout } from './components/Layout'
+import { Login } from './pages/Login'
 import { Dashboard } from './pages/Dashboard'
 import { CaseAllocation } from './pages/CaseAllocation'
 import { CaseDetail } from './pages/CaseDetail'
@@ -13,35 +14,50 @@ import { Agencies } from './pages/Agencies'
 import { AgencyDetail } from './pages/AgencyDetail'
 import { Customers } from './pages/Customers'
 import { CustomerDetail } from './pages/CustomerDetail'
+import { Toast } from './components/Toast'
 
-type Role = 'fedex' | 'dca'
+function ProtectedRoutes() {
+  const { isAuthenticated, user } = useAuthStore()
+  
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />
+  }
+
+  const role = user?.role || 'fedex'
+
+  return (
+    <Layout>
+      <Routes>
+        {/* FedEx Admin Routes */}
+        <Route path="/" element={role === 'fedex' ? <Dashboard /> : <Navigate to="/my-cases" />} />
+        <Route path="/case-allocation" element={<CaseAllocation />} />
+        <Route path="/agencies" element={<Agencies />} />
+        <Route path="/agency/:agencyId" element={<AgencyDetail />} />
+        <Route path="/agency-performance" element={<AgencyPerformance />} />
+        <Route path="/audit-logs" element={<AuditLogs />} />
+        
+        {/* DCA Agent Routes */}
+        <Route path="/my-cases" element={<MyCases />} />
+        <Route path="/pending-actions" element={<PendingActions />} />
+        <Route path="/recovery-stats" element={<RecoveryStats />} />
+        
+        {/* Shared Routes */}
+        <Route path="/customers" element={<Customers />} />
+        <Route path="/customer/:customerId" element={<CustomerDetail />} />
+        <Route path="/case/:caseId" element={<CaseDetail />} />
+      </Routes>
+    </Layout>
+  )
+}
 
 function App() {
-  const [currentRole, setCurrentRole] = useState<Role>('fedex')
-
   return (
     <BrowserRouter>
       <Routes>
-        <Route element={<Layout currentRole={currentRole} onRoleChange={setCurrentRole} />}>
-          {/* FedEx Admin Routes */}
-          <Route path="/" element={currentRole === 'fedex' ? <Dashboard /> : <Navigate to="/my-cases" />} />
-          <Route path="/case-allocation" element={<CaseAllocation />} />
-          <Route path="/agencies" element={<Agencies />} />
-          <Route path="/agency/:agencyId" element={<AgencyDetail />} />
-          <Route path="/agency-performance" element={<AgencyPerformance />} />
-          <Route path="/audit-logs" element={<AuditLogs />} />
-          
-          {/* DCA Agent Routes */}
-          <Route path="/my-cases" element={<MyCases />} />
-          <Route path="/pending-actions" element={<PendingActions />} />
-          <Route path="/recovery-stats" element={<RecoveryStats />} />
-          
-          {/* Shared Routes */}
-          <Route path="/customers" element={<Customers />} />
-          <Route path="/customer/:customerId" element={<CustomerDetail />} />
-          <Route path="/case/:caseId" element={<CaseDetail />} />
-        </Route>
+        <Route path="/login" element={<Login />} />
+        <Route path="/*" element={<ProtectedRoutes />} />
       </Routes>
+      <Toast />
     </BrowserRouter>
   )
 }

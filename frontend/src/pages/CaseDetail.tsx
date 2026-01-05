@@ -7,6 +7,7 @@ import { ArrowLeft, Mail, Phone, FileText, AlertCircle, Scale, User, ChevronDown
 import { cn } from '@/lib/utils'
 import { useState } from 'react'
 import { ConfirmationModal } from '@/components/ui/confirmation-modal'
+import { useUIStore } from '@/stores'
 
 const eventIcons = {
   email: Mail,
@@ -54,11 +55,14 @@ export function CaseDetail() {
     setSortOrder(prev => prev === 'desc' ? 'asc' : 'desc')
   }
 
+  const showToast = useUIStore(state => state.showToast)
+
   const handleReassign = () => {
     console.log('Reassigning case:', caseId)
     setIsReassignModalOpen(false)
-    // In real app, this would navigate to assignment page or open agency selector
-    navigate('/case-allocation')
+    showToast('Case reassigned successfully', 'success')
+    // Simulate delay then navigate
+    setTimeout(() => navigate('/case-allocation'), 500)
   }
 
   // Determine receiver based on actor and event type
@@ -466,7 +470,10 @@ export function CaseDetail() {
                 </div>
 
                 <div className="pt-4 space-y-2">
-                  <Button className="w-full">
+                  <Button 
+                    className="w-full"
+                    onClick={() => showToast('Email composer opened', 'info')}
+                  >
                     <Mail className="h-4 w-4 mr-2" />
                     Send Email
                   </Button>
