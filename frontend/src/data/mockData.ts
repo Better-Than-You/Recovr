@@ -773,6 +773,164 @@ export const agencies = [
   { id: 'rra', name: 'Rapid Recovery Associates', performanceScore: 0.79, totalRecovered: 1890000, activeCases: 52 }
 ];
 
+export interface Customer {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  address: string;
+  city: string;
+  state: string;
+  zip: string;
+  totalOwed: number;
+  activeCases: number;
+  paymentHistory: 'excellent' | 'good' | 'fair' | 'poor';
+  lastContact: string;
+}
+
+export const customers: Customer[] = [
+  {
+    id: 'CUST-001',
+    name: 'Acme Corporation',
+    email: 'accounts@acmecorp.com',
+    phone: '+1 (555) 234-5678',
+    address: '123 Business Park Drive',
+    city: 'Chicago',
+    state: 'IL',
+    zip: '60601',
+    totalOwed: 45000,
+    activeCases: 1,
+    paymentHistory: 'good',
+    lastContact: '2024-01-03'
+  },
+  {
+    id: 'CUST-002',
+    name: 'Global Logistics Inc',
+    email: 'finance@globallogistics.com',
+    phone: '+1 (555) 345-6789',
+    address: '456 Harbor Boulevard',
+    city: 'Los Angeles',
+    state: 'CA',
+    zip: '90001',
+    totalOwed: 28500,
+    activeCases: 1,
+    paymentHistory: 'excellent',
+    lastContact: '2024-01-05'
+  },
+  {
+    id: 'CUST-003',
+    name: 'Midwest Manufacturing',
+    email: 'billing@midwestmfg.com',
+    phone: '+1 (555) 456-7890',
+    address: '789 Industrial Way',
+    city: 'Detroit',
+    state: 'MI',
+    zip: '48201',
+    totalOwed: 67800,
+    activeCases: 1,
+    paymentHistory: 'poor',
+    lastContact: '2023-12-28'
+  },
+  {
+    id: 'CUST-004',
+    name: 'TechStart Solutions',
+    email: 'ap@techstart.io',
+    phone: '+1 (555) 567-8901',
+    address: '321 Innovation Circle',
+    city: 'Austin',
+    state: 'TX',
+    zip: '78701',
+    totalOwed: 12300,
+    activeCases: 1,
+    paymentHistory: 'excellent',
+    lastContact: '2024-01-06'
+  },
+  {
+    id: 'CUST-005',
+    name: 'Coastal Retail Group',
+    email: 'payments@coastalretail.com',
+    phone: '+1 (555) 678-9012',
+    address: '654 Beach Boulevard',
+    city: 'Miami',
+    state: 'FL',
+    zip: '33101',
+    totalOwed: 34200,
+    activeCases: 1,
+    paymentHistory: 'good',
+    lastContact: '2024-01-04'
+  },
+  {
+    id: 'CUST-006',
+    name: 'Northern Distributors',
+    email: 'accounting@northerndist.com',
+    phone: '+1 (555) 789-0123',
+    address: '987 Commerce Street',
+    city: 'Seattle',
+    state: 'WA',
+    zip: '98101',
+    totalOwed: 89500,
+    activeCases: 1,
+    paymentHistory: 'poor',
+    lastContact: '2023-12-15'
+  },
+  {
+    id: 'CUST-007',
+    name: 'Summit Industries',
+    email: 'finance@summitind.com',
+    phone: '+1 (555) 890-1234',
+    address: '147 Mountain View Drive',
+    city: 'Denver',
+    state: 'CO',
+    zip: '80201',
+    totalOwed: 15600,
+    activeCases: 1,
+    paymentHistory: 'excellent',
+    lastContact: '2024-01-06'
+  },
+  {
+    id: 'CUST-008',
+    name: 'Pacific Imports LLC',
+    email: 'billing@pacificimports.com',
+    phone: '+1 (555) 901-2345',
+    address: '258 Waterfront Plaza',
+    city: 'San Francisco',
+    state: 'CA',
+    zip: '94101',
+    totalOwed: 52400,
+    activeCases: 1,
+    paymentHistory: 'fair',
+    lastContact: '2024-01-02'
+  },
+  {
+    id: 'CUST-009',
+    name: 'Metro Services Group',
+    email: 'ap@metroservices.com',
+    phone: '+1 (555) 012-3456',
+    address: '369 Downtown Avenue',
+    city: 'New York',
+    state: 'NY',
+    zip: '10001',
+    totalOwed: 23700,
+    activeCases: 1,
+    paymentHistory: 'good',
+    lastContact: '2024-01-05'
+  },
+  {
+    id: 'CUST-010',
+    name: 'Eastern Supply Chain',
+    email: 'finance@easternsupply.com',
+    phone: '+1 (555) 123-4567',
+    address: '741 Logistics Lane',
+    city: 'Boston',
+    state: 'MA',
+    zip: '02101',
+    totalOwed: 41800,
+    activeCases: 1,
+    paymentHistory: 'fair',
+    lastContact: '2023-12-30'
+  }
+];
+
 export const dashboardStats = {
   totalOutstanding: 4523400,
   recoveryRate: 0.68,

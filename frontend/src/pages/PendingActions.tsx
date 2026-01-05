@@ -1,8 +1,11 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Clock, AlertTriangle } from 'lucide-react'
+import { Clock, AlertTriangle, ChevronRight } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 
 export function PendingActions() {
+  const navigate = useNavigate()
+  
   // Simulate pending actions
   const pendingActions = [
     { caseId: 'CS-2024-001', customer: 'Acme Corporation', action: 'Follow up call required', priority: 'high', dueIn: '2 hours' },
@@ -74,7 +77,11 @@ export function PendingActions() {
         {pendingActions.map((action) => {
           const priority = getPriorityBadge(action.priority)
           return (
-            <Card key={action.caseId}>
+            <Card 
+              key={action.caseId}
+              className="cursor-pointer transition-all hover:shadow-md hover:border-slate-300"
+              onClick={() => navigate(`/case/${action.caseId}`)}
+            >
               <CardContent className="p-6">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
@@ -91,17 +98,20 @@ export function PendingActions() {
                     </h3>
                     <p className="text-slate-600">{action.action}</p>
                   </div>
-                  <div className="text-right">
-                    <div className="flex items-center gap-2 text-slate-600">
-                      <Clock className="h-4 w-4" />
-                      <span className={
-                        action.dueIn === 'Overdue' ? 'text-red-600 font-semibold' :
-                        action.dueIn.includes('hour') ? 'text-orange-600 font-medium' :
-                        'text-slate-600'
-                      }>
-                        {action.dueIn}
-                      </span>
+                  <div className="flex items-center gap-4">
+                    <div className="text-right">
+                      <div className="flex items-center gap-2 text-slate-600">
+                        <Clock className="h-4 w-4" />
+                        <span className={
+                          action.dueIn === 'Overdue' ? 'text-red-600 font-semibold' :
+                          action.dueIn.includes('hour') ? 'text-orange-600 font-medium' :
+                          'text-slate-600'
+                        }>
+                          {action.dueIn}
+                        </span>
+                      </div>
                     </div>
+                    <ChevronRight className="h-5 w-5 text-slate-400" />
                   </div>
                 </div>
               </CardContent>

@@ -9,6 +9,10 @@ import { AuditLogs } from './pages/AuditLogs'
 import { MyCases } from './pages/MyCases'
 import { PendingActions } from './pages/PendingActions'
 import { RecoveryStats } from './pages/RecoveryStats'
+import { Agencies } from './pages/Agencies'
+import { AgencyDetail } from './pages/AgencyDetail'
+import { Customers } from './pages/Customers'
+import { CustomerDetail } from './pages/CustomerDetail'
 
 type Role = 'fedex' | 'dca'
 
@@ -22,6 +26,8 @@ function App() {
           {/* FedEx Admin Routes */}
           <Route path="/" element={currentRole === 'fedex' ? <Dashboard /> : <Navigate to="/my-cases" />} />
           <Route path="/case-allocation" element={<CaseAllocation />} />
+          <Route path="/agencies" element={<Agencies />} />
+          <Route path="/agency/:agencyId" element={<AgencyDetail />} />
           <Route path="/agency-performance" element={<AgencyPerformance />} />
           <Route path="/audit-logs" element={<AuditLogs />} />
           
@@ -31,6 +37,8 @@ function App() {
           <Route path="/recovery-stats" element={<RecoveryStats />} />
           
           {/* Shared Routes */}
+          <Route path="/customers" element={<Customers />} />
+          <Route path="/customer/:customerId" element={<CustomerDetail />} />
           <Route path="/case/:caseId" element={<CaseDetail />} />
         </Route>
       </Routes>
