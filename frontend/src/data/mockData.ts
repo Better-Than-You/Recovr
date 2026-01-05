@@ -9,6 +9,8 @@ export interface Case {
   accountNumber: string;
   dueDate: string;
   lastContact: string;
+  createdAt: string;
+  autoAssignAfterHours?: number;
 }
 
 export interface TimelineEvent {
@@ -37,7 +39,8 @@ export const mockCases: Case[] = [
     status: 'in_progress',
     accountNumber: 'AC-892341',
     dueDate: '2023-09-15',
-    lastContact: '2024-01-03'
+    lastContact: '2024-01-03',
+    createdAt: '2023-09-15T08:00:00Z'
   },
   {
     caseId: 'CS-2024-002',
@@ -49,7 +52,8 @@ export const mockCases: Case[] = [
     status: 'in_progress',
     accountNumber: 'GL-445782',
     dueDate: '2023-10-02',
-    lastContact: '2024-01-05'
+    lastContact: '2024-01-05',
+    createdAt: '2023-10-02T08:00:00Z'
   },
   {
     caseId: 'CS-2024-003',
@@ -61,7 +65,8 @@ export const mockCases: Case[] = [
     status: 'legal',
     accountNumber: 'MM-329845',
     dueDate: '2023-08-12',
-    lastContact: '2023-12-28'
+    lastContact: '2023-12-28',
+    createdAt: '2023-08-12T08:00:00Z'
   },
   {
     caseId: 'CS-2024-004',
@@ -73,7 +78,9 @@ export const mockCases: Case[] = [
     status: 'pending',
     accountNumber: 'TS-772891',
     dueDate: '2023-11-20',
-    lastContact: '2024-01-06'
+    lastContact: '2024-01-06',
+    createdAt: '2024-01-05T14:30:00Z',
+    autoAssignAfterHours: 12
   },
   {
     caseId: 'CS-2024-005',
@@ -85,7 +92,8 @@ export const mockCases: Case[] = [
     status: 'in_progress',
     accountNumber: 'CR-558923',
     dueDate: '2023-10-19',
-    lastContact: '2024-01-04'
+    lastContact: '2024-01-04',
+    createdAt: '2023-10-19T08:00:00Z'
   },
   {
     caseId: 'CS-2024-006',
@@ -97,7 +105,8 @@ export const mockCases: Case[] = [
     status: 'legal',
     accountNumber: 'ND-238476',
     dueDate: '2023-07-23',
-    lastContact: '2023-12-15'
+    lastContact: '2023-12-15',
+    createdAt: '2023-07-23T08:00:00Z'
   },
   {
     caseId: 'CS-2024-007',
@@ -109,7 +118,9 @@ export const mockCases: Case[] = [
     status: 'pending',
     accountNumber: 'SI-994523',
     dueDate: '2023-12-04',
-    lastContact: '2024-01-06'
+    lastContact: '2024-01-06',
+    createdAt: '2024-01-06T09:15:00Z',
+    autoAssignAfterHours: 48
   },
   {
     caseId: 'CS-2024-008',
@@ -121,7 +132,8 @@ export const mockCases: Case[] = [
     status: 'in_progress',
     accountNumber: 'PI-445829',
     dueDate: '2023-09-17',
-    lastContact: '2024-01-02'
+    lastContact: '2024-01-02',
+    createdAt: '2023-09-17T08:00:00Z'
   },
   {
     caseId: 'CS-2024-009',
@@ -133,7 +145,8 @@ export const mockCases: Case[] = [
     status: 'in_progress',
     accountNumber: 'MS-667234',
     dueDate: '2023-11-04',
-    lastContact: '2024-01-05'
+    lastContact: '2024-01-05',
+    createdAt: '2023-11-04T08:00:00Z'
   },
   {
     caseId: 'CS-2024-010',
@@ -145,7 +158,8 @@ export const mockCases: Case[] = [
     status: 'in_progress',
     accountNumber: 'ES-338901',
     dueDate: '2023-08-23',
-    lastContact: '2023-12-30'
+    lastContact: '2023-12-30',
+    createdAt: '2023-08-23T08:00:00Z'
   }
 ];
 

@@ -1,7 +1,11 @@
+import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { ConfirmationModal } from '@/components/ui/confirmation-modal'
 import { dashboardStats, mockCases, agencies } from '@/data/mockData'
-import { DollarSign, TrendingUp, Users, Clock } from 'lucide-react'
+import { DollarSign, TrendingUp, Users, Clock, Radio, Zap, AlertCircle, CheckCircle2 } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts'
 
 const recoveryTrendData = [
@@ -21,6 +25,59 @@ const agingBucketData = [
 ]
 
 export function Dashboard() {
+  const navigate = useNavigate()
+  const [lastUpdate, setLastUpdate] = useState(new Date())
+  const [isAutoAssignModalOpen, setIsAutoAssignModalOpen] = useState(false)
+  const [selectedCaseId, setSelectedCaseId] = useState<string | null>(null)
+  
+  // Simulate live updates every 30 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setLastUpdate(new Date())
+    }, 30000)
+    
+    return () => clearInterval(interval)
+  }, [])
+
+  // Get new unassigned cases
+  const newCases = mockCases.filter(c => c.status === 'pending' && !c.assignedAgency)
+  
+  // Calculate hours since case creation
+  const getHoursSinceCreation = (createdAt: string) => {
+    const created = new Date(createdAt)
+    const now = new Date()
+    return Math.floor((now.getTime() - created.getTime()) / (1000 * 60 * 60))
+  }
+  
+  // Format hours in a readable way
+  const formatHours = (hours: number) => {
+    if (hours < 1) {
+      const minutes = Math.floor(hours * 60)
+      return `${minutes}m`
+    } else if (hours < 24) {
+      return `${hours}h`
+    } else {
+      const days = Math.floor(hours / 24)
+      const remainingHours = hours % 24
+      return remainingHours > 0 ? `${days}d ${remainingHours}h` : `${days}d`
+    }
+  }
+  
+  // Auto-assign cases past their individual thresholds
+  const handleAutoAssignAll = () => {
+    const casesToAssign = newCases.filter(c => {
+      const threshold = c.autoAssignAfterHours || 24
+      return getHoursSinceCreation(c.createdAt) >= threshold
+    })
+    console.log(`Auto-assigning ${casesToAssign.length} cases`)
+    setIsAutoAssignModalOpen(false)
+    // In real app, this would make API call
+  }
+  
+  const handleManualAssign = (caseId: string) => {
+    navigate(`/case/${caseId}`)
+  }
+
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
@@ -31,11 +88,117 @@ export function Dashboard() {
 
   return (
     <div className="p-8">
-      {/* Header */}
+      {/* Header with Live Status */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-slate-900">Global Dashboard</h1>
-        <p className="text-slate-500 mt-1">Overview of debt collection operations</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-slate-900">Global Dashboard</h1>
+            <p className="text-slate-500 mt-1">Overview of debt collection operations</p>
+          </div>
+          <div className="flex items-center gap-2 text-sm text-slate-500">
+            <Radio className="h-4 w-4 text-green-500 animate-pulse" />
+            <span>Live Updates</span>
+            <span className="text-slate-400">•</span>
+            <span>Last updated: {lastUpdate.toLocaleTimeString()}</span>
+          </div>
+        </div>
       </div>
+
+      {/* New Cases Section */}
+      {newCases.length > 0 && (
+        <Card className="mb-8">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Zap className="h-5 w-5 text-blue-500" />
+                <CardTitle>New Unassigned Cases</CardTitle>
+                <Badge variant="high" className="ml-2">{newCases.length}</Badge>
+              </div>
+              <div className="flex gap-2">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => setIsAutoAssignModalOpen(true)}
+                  disabled={newCases.filter(c => {
+                    const threshold = c.autoAssignAfterHours || 24
+                    return getHoursSinceCreation(c.createdAt) >= threshold
+                  }).length === 0}
+                >
+                  <Zap className="h-4 w-4 mr-2" />
+                  Auto Assign All
+                </Button>
+              </div>
+            </div>
+            <CardDescription>
+              Cases pending assignment • Auto-assign triggers vary by case priority
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {newCases.map((caseItem) => {
+                const hoursSince = getHoursSinceCreation(caseItem.createdAt)
+                const autoAssignThreshold = caseItem.autoAssignAfterHours || 24
+                const willAutoAssignIn = Math.max(0, autoAssignThreshold - hoursSince)
+                const isOverdue = hoursSince >= autoAssignThreshold
+                const hoursOverdue = hoursSince - autoAssignThreshold
+                
+                return (
+                  <div 
+                    key={caseItem.caseId}
+                    className="flex items-center gap-4 p-4 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors"
+                  >
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <p className="font-medium text-slate-900">{caseItem.customerName}</p>
+                        {isOverdue && (
+                          <Badge variant="destructive" className="text-xs">
+                            <AlertCircle className="h-3 w-3 mr-1" />
+                            Auto-assign ready
+                          </Badge>                        )}
+                        <Badge variant="outline" className="text-xs">
+                          Trigger: {formatHours(autoAssignThreshold)}
+                        </Badge>
+                      </div>
+                      <div className="flex items-center gap-4 text-sm text-slate-600">
+                        <span className="font-mono text-xs">{caseItem.caseId}</span>
+                        <span>•</span>
+                        <span className="font-semibold text-slate-900">{formatCurrency(caseItem.amount)}</span>
+                        <span>•</span>
+                        <span className="text-xs">
+                          {isOverdue ? (
+                            <span className="text-red-600 font-medium">
+                              {formatHours(hoursOverdue)} overdue
+                            </span>
+                          ) : (
+                            <span>Auto-assign in {formatHours(willAutoAssignIn)}</span>
+                          )}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge 
+                        variant={
+                          caseItem.recoveryProbability >= 0.8 ? 'success' : 
+                          caseItem.recoveryProbability >= 0.6 ? 'high' : 
+                          'warning'
+                        }
+                      >
+                        {(caseItem.recoveryProbability * 100).toFixed(0)}% Recovery
+                      </Badge>
+                      <Button
+                        size="sm"
+                        onClick={() => handleManualAssign(caseItem.caseId)}
+                      >
+                        Manual Assign
+                      </Button>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -236,6 +399,21 @@ export function Dashboard() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Auto Assign Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={isAutoAssignModalOpen}
+        onClose={() => setIsAutoAssignModalOpen(false)}
+        onConfirm={handleAutoAssignAll}
+        title="Auto-Assign Cases?"
+        message={`This will automatically assign ${newCases.filter(c => {
+          const threshold = c.autoAssignAfterHours || 24
+          return getHoursSinceCreation(c.createdAt) >= threshold
+        }).length} case(s) that have exceeded their auto-assign threshold to the best available collection agency based on performance scores and workload.`}
+        confirmText="Auto-Assign"
+        cancelText="Cancel"
+        type="info"
+      />
     </div>
   )
 }
