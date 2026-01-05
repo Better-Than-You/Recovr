@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { customers, mockCases } from '@/data/mockData'
-import { ArrowLeft, User, DollarSign, Briefcase, Mail, Phone, MapPin, Calendar, ChevronRight, Building2 } from 'lucide-react'
+import { ArrowLeft, User, DollarSign, Briefcase, Mail, Phone, MapPin, Calendar, ChevronRight } from 'lucide-react'
 
 export function CustomerDetail() {
   const { customerId } = useParams()

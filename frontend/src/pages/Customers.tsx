@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { customers } from '@/data/mockData'
-import { User, MapPin, Phone, Mail, ChevronRight, DollarSign, Briefcase, Search, Filter, X } from 'lucide-react'
+import { User, MapPin, Phone, ChevronRight, DollarSign, Briefcase, Search, Filter, X } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useState, useMemo } from 'react'
 
@@ -76,7 +76,7 @@ export function Customers() {
           </div>
 
           {/* Payment History Filter */}
-          <div className="flex items-center gap-2 min-w-[220px]">
+          <div className="flex items-center gap-2 min-w-55">
             <Filter className="h-4 w-4 text-slate-400" />
             <select
               value={paymentHistoryFilter}

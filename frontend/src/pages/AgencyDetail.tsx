@@ -4,7 +4,6 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { agencies, mockCases } from '@/data/mockData'
 import { ArrowLeft, Building2, DollarSign, Briefcase, TrendingUp, Mail, Phone, MapPin, ChevronRight } from 'lucide-react'
-import { cn } from '@/lib/utils'
 
 export function AgencyDetail() {
   const { agencyId } = useParams()
