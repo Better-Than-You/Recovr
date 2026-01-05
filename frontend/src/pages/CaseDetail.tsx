@@ -3,9 +3,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { mockCases, mockTimelineData } from '@/data/mockData'
-import { ArrowLeft, Mail, Phone, FileText, AlertCircle, Scale, User, ChevronDown, ChevronUp, ChevronRight, ChevronLeft, Building2, Calendar, DollarSign, ArrowUp, ArrowDown, MoveRight } from 'lucide-react'
+import { ArrowLeft, Mail, Phone, FileText, AlertCircle, Scale, User, ChevronDown, ChevronUp, ChevronRight, ChevronLeft, Building2, Calendar, DollarSign, ArrowUp, ArrowDown, MoveRight, Repeat } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useState } from 'react'
+import { ConfirmationModal } from '@/components/ui/confirmation-modal'
 
 const eventIcons = {
   email: Mail,
@@ -27,6 +28,7 @@ export function CaseDetail() {
   const [expandedEmails, setExpandedEmails] = useState<Set<string>>(new Set())
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc') // desc = newest first
+  const [isReassignModalOpen, setIsReassignModalOpen] = useState(false)
   
   const caseData = mockCases.find(c => c.caseId === caseId)
   const timelineRaw = mockTimelineData[caseId || ''] || []
@@ -50,6 +52,13 @@ export function CaseDetail() {
 
   const toggleSortOrder = () => {
     setSortOrder(prev => prev === 'desc' ? 'asc' : 'desc')
+  }
+
+  const handleReassign = () => {
+    console.log('Reassigning case:', caseId)
+    setIsReassignModalOpen(false)
+    // In real app, this would navigate to assignment page or open agency selector
+    navigate('/case-allocation')
   }
 
   // Determine receiver based on actor and event type
@@ -110,17 +119,29 @@ export function CaseDetail() {
             <h1 className="text-3xl font-bold text-slate-900">{caseData.customerName}</h1>
             <p className="text-slate-500 mt-1">Case ID: {caseData.caseId} • Account: {caseData.accountNumber}</p>
           </div>
-          <Badge 
-            variant={
-              caseData.status === 'legal' ? 'destructive' :
-              caseData.status === 'in_progress' ? 'high' :
-              caseData.status === 'pending' ? 'warning' :
-              'secondary'
-            }
-            className="text-base px-4 py-2"
-          >
-            {caseData.status.replace('_', ' ').toUpperCase()}
-          </Badge>
+          <div className="flex items-center gap-3">
+            {caseData.assignedAgency && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsReassignModalOpen(true)}
+              >
+                <Repeat className="h-4 w-4 mr-2" />
+                Reassign Case
+              </Button>
+            )}
+            <Badge 
+              variant={
+                caseData.status === 'legal' ? 'destructive' :
+                caseData.status === 'in_progress' ? 'high' :
+                caseData.status === 'pending' ? 'warning' :
+                'secondary'
+              }
+              className="text-base px-4 py-2"
+            >
+              {caseData.status.replace('_', ' ').toUpperCase()}
+            </Badge>
+          </div>
         </div>
       </div>
 
@@ -204,7 +225,7 @@ export function CaseDetail() {
                               <div className="p-4">
                                 <div className="flex items-start justify-between mb-2">
                                   <div className="flex-1">
-                                    <div className="flex items-center gap-2 mb-1 flex-wrap">
+                                    <div className="flex items-center gap-2 mb-2 flex-wrap">
                                       <div className="flex items-center gap-1.5">
                                         <Badge 
                                           variant="outline"
@@ -234,9 +255,6 @@ export function CaseDetail() {
                                           </>
                                         )}
                                       </div>
-                                      <span className="text-xs text-slate-400">
-                                        {formatDate(event.timestamp)}
-                                      </span>
                                       {isEmail && (
                                         <Badge variant="secondary" className="text-xs">
                                           <Mail className="h-3 w-3 mr-1" />
@@ -248,19 +266,27 @@ export function CaseDetail() {
                                       {event.title}
                                     </h4>
                                   </div>
-                                  {isEmail && (
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      className="ml-2 h-8 w-8 p-0"
-                                    >
-                                      {isExpanded ? (
-                                        <ChevronUp className="h-4 w-4" />
-                                      ) : (
-                                        <ChevronDown className="h-4 w-4" />
-                                      )}
-                                    </Button>
-                                  )}
+                                  <div className="flex items-start gap-2 shrink-0">
+                                    <div className="flex items-center gap-2">
+                                      <Calendar className="h-4 w-4 text-slate-400" />
+                                      <span className="text-sm font-medium text-slate-700 whitespace-nowrap">
+                                        {formatDate(event.timestamp)}
+                                      </span>
+                                    </div>
+                                    {isEmail && (
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-8 w-8 p-0"
+                                      >
+                                        {isExpanded ? (
+                                          <ChevronUp className="h-4 w-4" />
+                                        ) : (
+                                          <ChevronDown className="h-4 w-4" />
+                                        )}
+                                      </Button>
+                                    )}
+                                  </div>
                                 </div>
                                 
                                 {/* Email subject preview */}
@@ -465,6 +491,18 @@ export function CaseDetail() {
           )}
         </div>
       </div>
+
+      {/* Reassign Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={isReassignModalOpen}
+        onClose={() => setIsReassignModalOpen(false)}
+        onConfirm={handleReassign}
+        title="Reassign Case?"
+        message={`Are you sure you want to reassign case ${caseData.caseId} from ${caseData.assignedAgency}? This will move the case to the assignment queue for redistribution.`}
+        confirmText="Reassign Case"
+        cancelText="Cancel"
+        type="warning"
+      />
     </div>
   )
 }
