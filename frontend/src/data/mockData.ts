@@ -240,62 +240,529 @@ export const mockTimelineData: Record<string, TimelineEvent[]> = {
       metadata: { emailSubject: 'Re: Payment Plan Accepted' }
     }
   ],
+  'CS-2024-002': [
+    {
+      id: 'evt-201',
+      timestamp: '2023-10-02T08:30:00Z',
+      actor: 'fedex',
+      eventType: 'status_change',
+      title: 'Invoice Generated',
+      description: 'Invoice #INV-445782 generated for $28,500',
+      metadata: { amount: 28500 }
+    },
+    {
+      id: 'evt-202',
+      timestamp: '2023-11-02T09:15:00Z',
+      actor: 'fedex',
+      eventType: 'email',
+      title: 'Payment Overdue Notice',
+      description: 'Automated reminder sent - payment 30 days overdue',
+      metadata: { emailSubject: 'URGENT: Payment Overdue - Invoice #INV-445782' }
+    },
+    {
+      id: 'evt-203',
+      timestamp: '2023-11-08T14:20:00Z',
+      actor: 'customer',
+      eventType: 'email',
+      title: 'Customer Acknowledgment',
+      description: 'Customer acknowledged debt and promised payment by month end',
+      metadata: { emailSubject: 'Re: Payment Status Update' }
+    },
+    {
+      id: 'evt-204',
+      timestamp: '2023-11-20T10:00:00Z',
+      actor: 'fedex',
+      eventType: 'status_change',
+      title: 'Assigned to DCA',
+      description: 'Case assigned to Elite Collection Agency after 48 days',
+      metadata: { previousStatus: 'overdue', newStatus: 'assigned' }
+    },
+    {
+      id: 'evt-205',
+      timestamp: '2023-11-23T11:30:00Z',
+      actor: 'dca',
+      eventType: 'email',
+      title: 'DCA Introduction Email',
+      description: 'Elite Collection Agency sent initial contact letter',
+      metadata: { emailSubject: 'Account Assignment Notice - Global Logistics Inc' }
+    },
+    {
+      id: 'evt-206',
+      timestamp: '2023-12-01T15:45:00Z',
+      actor: 'dca',
+      eventType: 'call',
+      title: 'Successful Phone Contact',
+      description: 'Spoke with accounts payable department'
+    },
+    {
+      id: 'evt-207',
+      timestamp: '2023-12-10T09:20:00Z',
+      actor: 'customer',
+      eventType: 'payment',
+      title: 'Partial Payment Received',
+      description: 'Received $10,000 payment, balance remaining: $18,500',
+      metadata: { amount: 10000 }
+    },
+    {
+      id: 'evt-208',
+      timestamp: '2023-12-15T13:15:00Z',
+      actor: 'dca',
+      eventType: 'email',
+      title: 'Balance Reminder',
+      description: 'Sent follow-up email regarding remaining balance',
+      metadata: { emailSubject: 'Remaining Balance Due - Account GL-445782' }
+    },
+    {
+      id: 'evt-209',
+      timestamp: '2024-01-05T16:30:00Z',
+      actor: 'customer',
+      eventType: 'email',
+      title: 'Payment Commitment',
+      description: 'Customer committed to full payment by January 15th',
+      metadata: { emailSubject: 'Re: Final Payment Confirmation' }
+    }
+  ],
   'CS-2024-003': [
     {
-      id: 'evt-101',
+      id: 'evt-301',
       timestamp: '2023-08-12T09:00:00Z',
       actor: 'fedex',
       eventType: 'status_change',
       title: 'Invoice Generated',
-      description: 'Invoice #INV-329845 generated for $67,800'
+      description: 'Invoice #INV-329845 generated for $67,800',
+      metadata: { amount: 67800 }
     },
     {
-      id: 'evt-102',
+      id: 'evt-302',
       timestamp: '2023-09-15T10:00:00Z',
       actor: 'fedex',
       eventType: 'email',
       title: 'Payment Reminder',
-      description: 'First overdue notice sent'
+      description: 'First overdue notice sent',
+      metadata: { emailSubject: 'Payment Reminder: Invoice #INV-329845' }
     },
     {
-      id: 'evt-103',
+      id: 'evt-303',
+      timestamp: '2023-09-28T14:30:00Z',
+      actor: 'fedex',
+      eventType: 'email',
+      title: 'Second Notice',
+      description: 'Second payment reminder - account 45 days overdue',
+      metadata: { emailSubject: 'SECOND NOTICE: Payment Required' }
+    },
+    {
+      id: 'evt-304',
       timestamp: '2023-10-20T11:30:00Z',
       actor: 'fedex',
       eventType: 'status_change',
       title: 'Assigned to Collections',
-      description: 'Case escalated to Premier Recovery Solutions'
+      description: 'Case escalated to Premier Recovery Solutions',
+      metadata: { previousStatus: 'overdue', newStatus: 'assigned' }
     },
     {
-      id: 'evt-104',
+      id: 'evt-305',
+      timestamp: '2023-10-25T09:45:00Z',
+      actor: 'dca',
+      eventType: 'email',
+      title: 'DCA Initial Contact',
+      description: 'Premier Recovery sent formal collection notice',
+      metadata: { emailSubject: 'Collection Notice - Account MM-329845' }
+    },
+    {
+      id: 'evt-306',
       timestamp: '2023-11-05T14:15:00Z',
       actor: 'dca',
       eventType: 'email',
       title: 'Final Notice Before Legal',
-      description: 'Sent formal notice of legal action'
+      description: 'Sent formal notice of potential legal action',
+      metadata: { emailSubject: 'FINAL NOTICE - Legal Action Pending' }
     },
     {
-      id: 'evt-105',
+      id: 'evt-307',
+      timestamp: '2023-11-10T10:20:00Z',
+      actor: 'dca',
+      eventType: 'call',
+      title: 'Contact Attempt Failed',
+      description: 'Phone disconnected, voicemail full'
+    },
+    {
+      id: 'evt-308',
+      timestamp: '2023-11-20T16:00:00Z',
+      actor: 'dca',
+      eventType: 'email',
+      title: 'Email Delivery Failed',
+      description: 'Multiple email addresses returned as undeliverable',
+      metadata: { emailSubject: 'URGENT: Account Status' }
+    },
+    {
+      id: 'evt-309',
       timestamp: '2023-11-25T09:00:00Z',
       actor: 'dca',
       eventType: 'call',
       title: 'No Response to Contact',
-      description: 'Multiple contact attempts failed'
+      description: 'Multiple contact attempts failed - all channels'
     },
     {
-      id: 'evt-106',
+      id: 'evt-310',
       timestamp: '2023-12-10T10:00:00Z',
       actor: 'dca',
       eventType: 'legal_notice',
       title: 'Legal Proceedings Initiated',
-      description: 'Case forwarded to legal department'
+      description: 'Case forwarded to legal department for litigation',
+      metadata: { previousStatus: 'in_progress', newStatus: 'legal' }
     },
     {
-      id: 'evt-107',
+      id: 'evt-311',
       timestamp: '2023-12-28T15:30:00Z',
       actor: 'dca',
       eventType: 'status_change',
       title: 'Court Filing Prepared',
-      description: 'Documentation prepared for civil suit'
+      description: 'Documentation prepared for civil suit filing'
+    }
+  ],
+  'CS-2024-005': [
+    {
+      id: 'evt-501',
+      timestamp: '2023-10-19T08:00:00Z',
+      actor: 'fedex',
+      eventType: 'status_change',
+      title: 'Invoice Generated',
+      description: 'Invoice #INV-558923 generated for $34,200',
+      metadata: { amount: 34200 }
+    },
+    {
+      id: 'evt-502',
+      timestamp: '2023-11-19T09:30:00Z',
+      actor: 'fedex',
+      eventType: 'email',
+      title: 'Payment Due Reminder',
+      description: 'Automated overdue notice sent',
+      metadata: { emailSubject: 'Payment Overdue: Invoice #INV-558923' }
+    },
+    {
+      id: 'evt-503',
+      timestamp: '2023-11-25T10:45:00Z',
+      actor: 'customer',
+      eventType: 'email',
+      title: 'Customer Dispute',
+      description: 'Customer disputed invoice, claiming service issues',
+      metadata: { emailSubject: 'Dispute: Invoice #INV-558923' }
+    },
+    {
+      id: 'evt-504',
+      timestamp: '2023-11-28T14:20:00Z',
+      actor: 'fedex',
+      eventType: 'email',
+      title: 'Dispute Investigation',
+      description: 'Forwarded to customer service for investigation',
+      metadata: { emailSubject: 'Re: Investigating Your Dispute' }
+    },
+    {
+      id: 'evt-505',
+      timestamp: '2023-12-05T11:00:00Z',
+      actor: 'fedex',
+      eventType: 'email',
+      title: 'Dispute Resolution',
+      description: 'Dispute resolved - invoice validated, payment still due',
+      metadata: { emailSubject: 'Dispute Resolution - Payment Required' }
+    },
+    {
+      id: 'evt-506',
+      timestamp: '2023-12-12T09:15:00Z',
+      actor: 'fedex',
+      eventType: 'status_change',
+      title: 'Assigned to DCA',
+      description: 'Case assigned to Elite Collection Agency',
+      metadata: { previousStatus: 'disputed', newStatus: 'assigned' }
+    },
+    {
+      id: 'evt-507',
+      timestamp: '2023-12-15T13:30:00Z',
+      actor: 'dca',
+      eventType: 'email',
+      title: 'Collection Notice Sent',
+      description: 'Elite Collection Agency initiated contact',
+      metadata: { emailSubject: 'Collection Account Notice - CR-558923' }
+    },
+    {
+      id: 'evt-508',
+      timestamp: '2023-12-22T10:45:00Z',
+      actor: 'dca',
+      eventType: 'call',
+      title: 'Customer Contact',
+      description: 'Discussed payment options with customer'
+    },
+    {
+      id: 'evt-509',
+      timestamp: '2024-01-04T15:20:00Z',
+      actor: 'customer',
+      eventType: 'email',
+      title: 'Payment Plan Request',
+      description: 'Customer requested 60-day payment plan',
+      metadata: { emailSubject: 'Payment Plan Proposal' }
+    }
+  ],
+  'CS-2024-008': [
+    {
+      id: 'evt-801',
+      timestamp: '2023-09-17T09:30:00Z',
+      actor: 'fedex',
+      eventType: 'status_change',
+      title: 'Invoice Generated',
+      description: 'Invoice #INV-445829 generated for $52,400',
+      metadata: { amount: 52400 }
+    },
+    {
+      id: 'evt-802',
+      timestamp: '2023-10-17T10:00:00Z',
+      actor: 'fedex',
+      eventType: 'email',
+      title: 'First Payment Reminder',
+      description: 'Initial overdue notice sent to customer',
+      metadata: { emailSubject: 'Payment Reminder: Invoice #INV-445829' }
+    },
+    {
+      id: 'evt-803',
+      timestamp: '2023-10-25T11:15:00Z',
+      actor: 'customer',
+      eventType: 'email',
+      title: 'Customer Response',
+      description: 'Customer acknowledged invoice and requested billing verification',
+      metadata: { emailSubject: 'Re: Need Invoice Details' }
+    },
+    {
+      id: 'evt-804',
+      timestamp: '2023-10-28T09:45:00Z',
+      actor: 'fedex',
+      eventType: 'email',
+      title: 'Documentation Sent',
+      description: 'Sent detailed billing breakdown and proof of delivery',
+      metadata: { emailSubject: 'Re: Invoice Documentation Attached' }
+    },
+    {
+      id: 'evt-805',
+      timestamp: '2023-11-15T13:20:00Z',
+      actor: 'fedex',
+      eventType: 'email',
+      title: 'Follow-up Reminder',
+      description: 'Second notice sent after no payment received',
+      metadata: { emailSubject: 'SECOND NOTICE: Payment Required' }
+    },
+    {
+      id: 'evt-806',
+      timestamp: '2023-11-28T08:30:00Z',
+      actor: 'fedex',
+      eventType: 'status_change',
+      title: 'Assigned to Collections',
+      description: 'Account transferred to Rapid Recovery Associates',
+      metadata: { previousStatus: 'overdue', newStatus: 'assigned' }
+    },
+    {
+      id: 'evt-807',
+      timestamp: '2023-12-01T10:15:00Z',
+      actor: 'dca',
+      eventType: 'email',
+      title: 'DCA First Contact',
+      description: 'Rapid Recovery Associates sent initial collection letter',
+      metadata: { emailSubject: 'Account Assignment - Pacific Imports LLC' }
+    },
+    {
+      id: 'evt-808',
+      timestamp: '2023-12-10T14:30:00Z',
+      actor: 'dca',
+      eventType: 'call',
+      title: 'Phone Discussion',
+      description: 'Spoke with CFO regarding payment timeline'
+    },
+    {
+      id: 'evt-809',
+      timestamp: '2023-12-20T16:00:00Z',
+      actor: 'customer',
+      eventType: 'email',
+      title: 'Payment Schedule Proposal',
+      description: 'Customer proposed two installment payments in January',
+      metadata: { emailSubject: 'Payment Schedule Proposal' }
+    },
+    {
+      id: 'evt-810',
+      timestamp: '2024-01-02T11:45:00Z',
+      actor: 'dca',
+      eventType: 'email',
+      title: 'Agreement Confirmed',
+      description: 'Payment plan approved: $26,200 due Jan 10 and Jan 25',
+      metadata: { emailSubject: 'Payment Plan Confirmation' }
+    }
+  ],
+  'CS-2024-009': [
+    {
+      id: 'evt-901',
+      timestamp: '2023-11-04T08:00:00Z',
+      actor: 'fedex',
+      eventType: 'status_change',
+      title: 'Invoice Generated',
+      description: 'Invoice #INV-667234 generated for $23,700',
+      metadata: { amount: 23700 }
+    },
+    {
+      id: 'evt-902',
+      timestamp: '2023-12-04T09:15:00Z',
+      actor: 'fedex',
+      eventType: 'email',
+      title: 'Payment Overdue Notice',
+      description: 'First reminder sent - 30 days past due',
+      metadata: { emailSubject: 'Payment Due: Invoice #INV-667234' }
+    },
+    {
+      id: 'evt-903',
+      timestamp: '2023-12-12T10:30:00Z',
+      actor: 'customer',
+      eventType: 'email',
+      title: 'Customer Response',
+      description: 'Customer cited administrative delays, promised payment soon',
+      metadata: { emailSubject: 'Re: Payment Processing Delayed' }
+    },
+    {
+      id: 'evt-904',
+      timestamp: '2023-12-20T11:00:00Z',
+      actor: 'fedex',
+      eventType: 'status_change',
+      title: 'Escalated to Collections',
+      description: 'Account assigned to Elite Collection Agency',
+      metadata: { previousStatus: 'overdue', newStatus: 'assigned' }
+    },
+    {
+      id: 'evt-905',
+      timestamp: '2023-12-22T13:45:00Z',
+      actor: 'dca',
+      eventType: 'email',
+      title: 'Collection Notice',
+      description: 'Elite Collection Agency sent initial outreach',
+      metadata: { emailSubject: 'Collection Account Notice - MS-667234' }
+    },
+    {
+      id: 'evt-906',
+      timestamp: '2023-12-28T15:20:00Z',
+      actor: 'dca',
+      eventType: 'call',
+      title: 'Left Voicemail',
+      description: 'Called customer service line, left detailed message'
+    },
+    {
+      id: 'evt-907',
+      timestamp: '2024-01-02T09:30:00Z',
+      actor: 'customer',
+      eventType: 'call',
+      title: 'Customer Callback',
+      description: 'Customer returned call, requested payment arrangement'
+    },
+    {
+      id: 'evt-908',
+      timestamp: '2024-01-05T14:15:00Z',
+      actor: 'dca',
+      eventType: 'email',
+      title: 'Payment Options Provided',
+      description: 'Sent email with multiple payment methods and deadline',
+      metadata: { emailSubject: 'Payment Options - Account MS-667234' }
+    }
+  ],
+  'CS-2024-010': [
+    {
+      id: 'evt-1001',
+      timestamp: '2023-08-23T08:45:00Z',
+      actor: 'fedex',
+      eventType: 'status_change',
+      title: 'Invoice Generated',
+      description: 'Invoice #INV-338901 generated for $41,800',
+      metadata: { amount: 41800 }
+    },
+    {
+      id: 'evt-1002',
+      timestamp: '2023-09-23T10:00:00Z',
+      actor: 'fedex',
+      eventType: 'email',
+      title: 'Payment Reminder',
+      description: 'Automated payment reminder sent',
+      metadata: { emailSubject: 'Payment Due: Invoice #INV-338901' }
+    },
+    {
+      id: 'evt-1003',
+      timestamp: '2023-10-10T11:20:00Z',
+      actor: 'fedex',
+      eventType: 'email',
+      title: 'Second Notice',
+      description: 'Follow-up reminder sent - account overdue',
+      metadata: { emailSubject: 'URGENT: Payment Overdue' }
+    },
+    {
+      id: 'evt-1004',
+      timestamp: '2023-10-25T09:30:00Z',
+      actor: 'fedex',
+      eventType: 'status_change',
+      title: 'Assigned to DCA',
+      description: 'Case transferred to Rapid Recovery Associates',
+      metadata: { previousStatus: 'overdue', newStatus: 'assigned' }
+    },
+    {
+      id: 'evt-1005',
+      timestamp: '2023-10-28T13:15:00Z',
+      actor: 'dca',
+      eventType: 'email',
+      title: 'DCA Introduction',
+      description: 'Rapid Recovery Associates initiated collection process',
+      metadata: { emailSubject: 'Collection Account Assignment - ES-338901' }
+    },
+    {
+      id: 'evt-1006',
+      timestamp: '2023-11-05T10:45:00Z',
+      actor: 'customer',
+      eventType: 'email',
+      title: 'Customer Outreach',
+      description: 'Customer contacted DCA, requested settlement options',
+      metadata: { emailSubject: 'Inquiry: Settlement Options' }
+    },
+    {
+      id: 'evt-1007',
+      timestamp: '2023-11-10T14:30:00Z',
+      actor: 'dca',
+      eventType: 'email',
+      title: 'Settlement Offer',
+      description: 'Proposed settlement: $35,000 lump sum or full payment plan',
+      metadata: { emailSubject: 'Settlement Proposal - Account ES-338901' }
+    },
+    {
+      id: 'evt-1008',
+      timestamp: '2023-11-22T16:00:00Z',
+      actor: 'customer',
+      eventType: 'email',
+      title: 'Declined Settlement',
+      description: 'Customer declined settlement, requested time to arrange full payment',
+      metadata: { emailSubject: 'Re: Need More Time' }
+    },
+    {
+      id: 'evt-1009',
+      timestamp: '2023-12-05T09:15:00Z',
+      actor: 'dca',
+      eventType: 'call',
+      title: 'Status Check Call',
+      description: 'Called to check on payment progress'
+    },
+    {
+      id: 'evt-1010',
+      timestamp: '2023-12-15T11:30:00Z',
+      actor: 'dca',
+      eventType: 'email',
+      title: 'Final Reminder',
+      description: 'Sent reminder that account is 113 days overdue',
+      metadata: { emailSubject: 'Final Notice - Payment Required' }
+    },
+    {
+      id: 'evt-1011',
+      timestamp: '2023-12-30T15:45:00Z',
+      actor: 'customer',
+      eventType: 'email',
+      title: 'Payment Commitment',
+      description: 'Customer committed to payment by mid-January 2024',
+      metadata: { emailSubject: 'Re: Payment by January 15' }
     }
   ]
 };
