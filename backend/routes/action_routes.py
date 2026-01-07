@@ -1,8 +1,10 @@
 from flask import Blueprint, jsonify, request
-from models import db, TimelineEvent
+from models import db, Case, Customer, TimelineEvent
 import os
+import csv
 import uuid
 from datetime import datetime
+from werkzeug.utils import secure_filename
 
 actions_bp = Blueprint('actions', __name__)
 
@@ -34,8 +36,9 @@ def get_pending_actions():
         }
     ])
 
-@actions_bp.route('/upload_csv', methods=['POST'])
-def upload_csv():
+@actions_bp.route('/upload', methods=['POST'])
+def upload_cases():
+    """Upload and process CSV/Excel file with case data"""
     if 'file' not in request.files:
         return jsonify({'error': 'No file part'}), 400
     
@@ -43,19 +46,31 @@ def upload_csv():
     if file.filename == '':
         return jsonify({'error': 'No selected file'}), 400
 
-    if file:
-        # Ensure userdata directory exists relative to backend root
-        # Assuming we are in backend/routes, go up one level to backend
+    # Validate file extension
+    filename = secure_filename(file.filename or '')
+    if not filename.lower().endswith(('.csv', '.xlsx', '.xls')):
+        return jsonify({'error': 'Invalid file type. Please upload CSV or Excel file'}), 400
+
+    try:
+        # Save file temporarily
         base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         userdata_dir = os.path.join(base_dir, 'userdata')
         
         if not os.path.exists(userdata_dir):
             os.makedirs(userdata_dir)
             
-        file_path = os.path.join(userdata_dir, 'file.csv')
+        file_path = os.path.join(userdata_dir, filename)
         file.save(file_path)
         
-        return jsonify({'message': 'File received and stored successfully', 'path': file_path}), 200
+        response_message = f"Successfully received the file."
+            
+        return jsonify({
+            'message': response_message,
+        }), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': f'Failed to process file: {str(e)}'}), 500
 
 @actions_bp.route('/timeline', methods=['POST'])
 def update_timeline():

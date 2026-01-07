@@ -10,6 +10,7 @@ import { dashboardService, type DashboardStats } from '@/services/dashboardServi
 import { caseService, type Case } from '@/services/caseService'
 import { agencyService, type Agency } from '@/services/agencyService'
 import { useUIStore } from '@/stores'
+import api from '@/services/api'
 
 const agingBucketData = [
   { bucket: '0-30', count: 15, amount: 234000 },
@@ -153,15 +154,19 @@ export function Dashboard() {
     try {
       const formData = new FormData()
       formData.append('file', file)
+      
+      const response = await api.post('/actions/upload', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      }) 
 
-      // TODO: Replace with actual API endpoint
-      // For now, we'll simulate the upload
-      await new Promise(resolve => setTimeout(resolve, 2000))
+      const { message, cases_created, errors } = response.data
+      showToast(message || `Successfully imported ${cases_created} case(s)`, 'success')
       
-      // In a real implementation, you would call something like:
-      // await caseService.uploadCaseData(formData)
-      
-      showToast(`Successfully uploaded ${file.name}. Processing case data...`, 'success')
+      if (errors && errors.length > 0) {
+        console.warn('Import warnings:', errors)
+      }
       
       // Refresh dashboard data
       fetchDashboardData()
@@ -170,9 +175,10 @@ export function Dashboard() {
       if (fileInputRef.current) {
         fileInputRef.current.value = ''
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error uploading file:', error)
-      showToast('Failed to upload file', 'error')
+      const errorMessage = error.response?.data?.error || 'Failed to upload file'
+      showToast(errorMessage, 'error')
     } finally {
       setIsUploading(false)
     }
@@ -522,14 +528,27 @@ export function Dashboard() {
       <Card>
         <CardHeader>
           <CardTitle>Agency Performance Ranking</CardTitle>
-          <CardDescription>Top performing collection agencies</CardDescription>
+          <CardDescription>Top 10 performing collection agencies</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
-            {agencies.map((agency, index) => (
+          <div className="max-h-[500px] overflow-y-auto pr-2 space-y-4">
+            {agencies
+              .sort((a, b) => (b.performanceScore || 0) - (a.performanceScore || 0))
+              .slice(0, 10)
+              .map((agency, index) => (
               <div key={agency.id} className="flex items-center gap-4">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100">
-                  <span className="text-sm font-bold text-slate-700">#{index + 1}</span>
+                <div className={`flex h-10 w-10 items-center justify-center rounded-full ${
+                  index === 0 ? 'bg-yellow-100' :
+                  index === 1 ? 'bg-slate-200' :
+                  index === 2 ? 'bg-orange-100' :
+                  'bg-slate-100'
+                }`}>
+                  <span className={`text-sm font-bold ${
+                    index === 0 ? 'text-yellow-700' :
+                    index === 1 ? 'text-slate-700' :
+                    index === 2 ? 'text-orange-700' :
+                    'text-slate-700'
+                  }`}>#{index + 1}</span>
                 </div>
                 <div className="flex-1">
                   <p className="text-sm font-medium text-slate-900">{agency.name}</p>
@@ -538,18 +557,15 @@ export function Dashboard() {
                   </p>
                 </div>
                 <div className="text-right">
-                  <p className="text-sm font-semibold text-slate-900">
-                    {formatCurrency(agency.recoveredAmount || 0)}
-                  </p>
                   <Badge 
                     variant={
-                      (agency.performance_score || 0) >= 0.9 ? 'success' : 
-                      (agency.performance_score || 0) >= 0.8 ? 'high' : 
+                      (agency.performanceScore || 0) >= 0.9 ? 'success' : 
+                      (agency.performanceScore || 0) >= 0.8 ? 'high' : 
                       'medium'
                     }
                     className="mt-1"
                   >
-                    {((agency.performance_score || 0) * 100).toFixed(0)}% Score
+                    {(( agency.performanceScore || 0) * 100 )}% Score
                   </Badge>
                 </div>
               </div>

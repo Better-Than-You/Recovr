@@ -39,11 +39,11 @@ export function Agencies() {
       
       let matchesPerformance = true
       if (performanceFilter === 'high') {
-        matchesPerformance = (agency.performance_score || 0) >= 0.9
+        matchesPerformance = (agency.performanceScore || 0) >= 0.9
       } else if (performanceFilter === 'medium') {
-        matchesPerformance = (agency.performance_score || 0) >= 0.8 && (agency.performance_score || 0) < 0.9
+        matchesPerformance = (agency.performanceScore || 0) >= 0.8 && (agency.performanceScore || 0) < 0.9
       } else if (performanceFilter === 'low') {
-        matchesPerformance = (agency.performance_score || 0) < 0.8
+        matchesPerformance = (agency.performanceScore || 0) < 0.8
       }
       
       return matchesSearch && matchesPerformance
@@ -143,7 +143,7 @@ export function Agencies() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-emerald-600">
-              {agencies.length > 0 ? ((agencies.reduce((sum, a) => sum + (a.performanceScore || a.performance_score || 0), 0) / agencies.length) * 100).toFixed(0) : 0}%
+              {agencies.length > 0 ? ((agencies.reduce((sum, a) => sum + (a.performanceScore || 0), 0) / agencies.length) * 100).toFixed(0) : 0}%
             </div>
           </CardContent>
         </Card>
@@ -216,12 +216,12 @@ export function Agencies() {
                       </h3>
                       <Badge 
                         variant={
-                          (agency.performanceScore || agency.performance_score || 0) >= 0.9 ? 'default' :
-                          (agency.performanceScore || agency.performance_score || 0) >= 0.8 ? 'secondary' :
+                          (agency.performanceScore || 0) >= 0.9 ? 'default' :
+                          (agency.performanceScore || 0) >= 0.8 ? 'secondary' :
                           'outline'
                         }
                       >
-                        {((agency.performanceScore || agency.performance_score || 0) * 100).toFixed(0)}% Performance
+                        {((agency.performanceScore || 0) * 100).toFixed(0)}% Performance
                       </Badge>
                     </div>
                     
@@ -251,7 +251,7 @@ export function Agencies() {
                         <div>
                           <p className="text-xs text-slate-500">Success Rate</p>
                           <p className="text-sm font-semibold text-emerald-600">
-                            {((agency.performanceScore || agency.performance_score || 0) * 100).toFixed(0)}%
+                            {((agency.performanceScore || 0) * 100).toFixed(0)}%
                           </p>
                         </div>
                       </div>

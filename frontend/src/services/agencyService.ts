@@ -5,7 +5,6 @@ import type { Case } from './caseService';
 export interface Agency {
   id: string;
   name: string;
-  performance_score: number;
   active_cases: number;
   active_outstanding_amount: number;
   success_rate: number;

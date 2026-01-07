@@ -24,3 +24,4 @@ instance/
 
 # Pytest
 .pytest_cache/
+../todos.md
