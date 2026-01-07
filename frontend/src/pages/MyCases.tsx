@@ -1,16 +1,41 @@
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { mockCases } from '@/data/mockData'
 import { Clock, AlertCircle } from 'lucide-react'
+import { caseService, type Case } from '@/services/caseService'
+import { useAuthStore, useUIStore } from '@/stores'
 
 export function MyCases() {
   const navigate = useNavigate()
-  
-  // Filter cases assigned to agencies (simulating DCA agent's cases)
-  const myCases = mockCases.filter(c => c.assignedAgency === 'Premier Recovery Solutions')
+  const showToast = useUIStore((state) => state.showToast)
+  const user = useAuthStore((state) => state.user)
+  const [loading, setLoading] = useState(true)
+  const [myCases, setMyCases] = useState<Case[]>([])
+
+  useEffect(() => {
+    fetchMyCases()
+  }, [])
+
+  const fetchMyCases = async () => {
+    try {
+      setLoading(true)
+      // For DCA role, filter cases assigned to their agency
+      // For now, we'll get cases with status 'assigned' or 'in_progress'
+      const response = await caseService.getCases({ 
+        status: user?.role === 'dca' ? 'assigned' : 'all',
+        limit: 100 
+      })
+      setMyCases(response.cases)
+    } catch (error) {
+      console.error('Error fetching cases:', error)
+      showToast('Failed to load cases', 'error')
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('en-US', {
@@ -22,7 +47,18 @@ export function MyCases() {
 
   const totalAssigned = myCases.length
   const totalAmount = myCases.reduce((sum, c) => sum + c.amount, 0)
-  const urgentCases = myCases.filter(c => c.agingDays > 120).length
+  const urgentCases = myCases.filter(c => c.aging_days > 120).length
+
+  if (loading) {
+    return (
+      <div className="p-8 flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-slate-600">Loading cases...</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="p-8">
@@ -95,14 +131,14 @@ export function MyCases() {
             </TableHeader>
             <TableBody>
               {myCases.map((caseItem) => (
-                <TableRow key={caseItem.caseId}>
+                <TableRow key={caseItem.id}>
                   <TableCell className="font-mono text-sm">
-                    {caseItem.caseId}
+                    {caseItem.id}
                   </TableCell>
                   <TableCell>
                     <div>
-                      <p className="font-medium text-slate-900">{caseItem.customerName}</p>
-                      <p className="text-xs text-slate-500">{caseItem.accountNumber}</p>
+                      <p className="font-medium text-slate-900">{caseItem.customer_name}</p>
+                      <p className="text-xs text-slate-500">{caseItem.customer_id || 'N/A'}</p>
                     </div>
                   </TableCell>
                   <TableCell className="font-semibold">
@@ -111,13 +147,13 @@ export function MyCases() {
                   <TableCell>
                     <div className="flex items-center gap-2">
                       <span className={
-                        caseItem.agingDays > 120 ? 'text-red-600 font-semibold' :
-                        caseItem.agingDays > 90 ? 'text-orange-600 font-medium' :
+                        caseItem.aging_days > 120 ? 'text-red-600 font-semibold' :
+                        caseItem.aging_days > 90 ? 'text-orange-600 font-medium' :
                         'text-slate-600'
                       }>
-                        {caseItem.agingDays}
+                        {caseItem.aging_days}
                       </span>
-                      {caseItem.agingDays > 120 && (
+                      {caseItem.aging_days > 120 && (
                         <Clock className="h-4 w-4 text-red-500" />
                       )}
                     </div>
@@ -134,7 +170,7 @@ export function MyCases() {
                     </Badge>
                   </TableCell>
                   <TableCell className="text-sm text-slate-600">
-                    {new Date(caseItem.lastContact).toLocaleDateString('en-US', {
+                    {new Date(caseItem.created_at).toLocaleDateString('en-US', {
                       month: 'short',
                       day: 'numeric'
                     })}
@@ -143,7 +179,7 @@ export function MyCases() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => navigate(`/case/${caseItem.caseId}`)}
+                      onClick={() => navigate(`/case/${caseItem.id}`)}
                     >
                       View Details
                     </Button>

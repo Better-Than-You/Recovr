@@ -46,11 +46,12 @@ class Customer(db.Model):
     city = db.Column(db.String(100))
     state = db.Column(db.String(50))
     zip_code = db.Column(db.String(20))
+    payment_history = db.Column(db.String(20)) # excellent, good, fair, poor
+    last_contact = db.Column(db.String(20))
     
     cases = db.relationship('Case', backref='customer_rel', lazy=True)
 
     def to_dict(self):
-        total_owed = sum([c.amount for c in self.cases if c.status not in ['resolved']])
         return {
             'id': self.id,
             'name': self.name,
@@ -60,18 +61,21 @@ class Customer(db.Model):
             'city': self.city,
             'state': self.state,
             'zip': self.zip_code,
-            'totalOwed': total_owed,
-            'activeCases': len([c for c in self.cases if c.status not in ['resolved']])
+            'activeCases': len([c for c in self.cases if c.status not in ['resolved']]),
+            'paymentHistory': self.payment_history,
+            'lastContact': self.last_contact
         }
 
 class Case(db.Model):
     id = db.Column(db.String(50), primary_key=True) # caseId
     customer_name = db.Column(db.String(100), nullable=False) # Redundant but keeps frontend structure
     customer_id = db.Column(db.String(50), db.ForeignKey('customer.id'), nullable=True) # Link to actual customer
-    amount = db.Column(db.Float, nullable=False)
+    invoice_amount = db.Column(db.Float, nullable=False)
+    recovered_amount = db.Column(db.Float, nullable=False)
     aging_days = db.Column(db.Integer)
     recovery_probability = db.Column(db.Float)
     assigned_agency_id = db.Column(db.String(50), db.ForeignKey('agency.id'), nullable=True)
+    assigned_agency_reason = db.Column(db.String(400), nullable=True, default=None)
     status = db.Column(db.String(20), default='pending') # pending, assigned, in_progress, resolved, legal
     account_number = db.Column(db.String(50))
     due_date = db.Column(db.String(20))
@@ -85,11 +89,13 @@ class Case(db.Model):
         return {
             'caseId': self.id,
             'customerName': self.customer_name,
-            'amount': self.amount,
+            'invoice_amount': self.invoice_amount,
+            'recovered_amount': self.recovered_amount,
             'agingDays': self.aging_days,
             'recoveryProbability': self.recovery_probability,
             'assignedAgency': self.agency.name if self.agency else None,
             'assignedAgencyId': self.assigned_agency_id,
+            'assignedAgencyReason': self.assigned_agency_reason,
             'status': self.status,
             'accountNumber': self.account_number,
             'dueDate': self.due_date,
@@ -111,6 +117,7 @@ class TimelineEvent(db.Model):
     # Metadata fields (stored as individual columns for simplicity in sqlite, could be JSON)
     meta_amount = db.Column(db.Float, nullable=True)
     meta_email_subject = db.Column(db.String(200), nullable=True)
+    meta_email_content = db.Column(db.String(2000), nullable=True)
     meta_previous_status = db.Column(db.String(50), nullable=True)
     meta_new_status = db.Column(db.String(50), nullable=True)
 
@@ -118,6 +125,7 @@ class TimelineEvent(db.Model):
         metadata = {}
         if self.meta_amount: metadata['amount'] = self.meta_amount
         if self.meta_email_subject: metadata['emailSubject'] = self.meta_email_subject
+        if self.meta_email_content: metadata['emailContent'] = self.meta_email_content
         if self.meta_previous_status: metadata['previousStatus'] = self.meta_previous_status
         if self.meta_new_status: metadata['newStatus'] = self.meta_new_status
 
@@ -146,3 +154,30 @@ class AuditLog(db.Model):
             'action': self.action,
             'details': self.details
         }
+
+class Notification(db.Model):
+    id = db.Column(db.String(50), primary_key=True)
+    type = db.Column(db.String(30), nullable=False) # case_update, payment_received, action_required, status_change, reminder
+    title = db.Column(db.String(200), nullable=False)
+    message = db.Column(db.Text, nullable=False)
+    timestamp = db.Column(db.String(30))
+    read = db.Column(db.Boolean, default=False)
+    link = db.Column(db.String(200), nullable=True)
+    case_id = db.Column(db.String(50), db.ForeignKey('case.id'), nullable=True)
+    priority = db.Column(db.String(10), nullable=True) # high, medium, low
+
+    def to_dict(self):
+        result = {
+            'id': self.id,
+            'type': self.type,
+            'title': self.title,
+            'message': self.message,
+            'timestamp': self.timestamp,
+            'read': self.read,
+            'priority': self.priority
+        }
+        if self.link:
+            result['link'] = self.link
+        if self.case_id:
+            result['caseId'] = self.case_id
+        return result

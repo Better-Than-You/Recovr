@@ -1,30 +1,47 @@
+import { useState, useMemo, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { customers } from '@/data/mockData'
-import { User, MapPin, Phone, ChevronRight, DollarSign, Briefcase, Search, Filter, X } from 'lucide-react'
+import { User, MapPin, Phone, ChevronRight, DollarSign, Briefcase, Search, X } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
-import { useState, useMemo } from 'react'
+import { customerService, type Customer } from '@/services/customerService'
+import { useUIStore } from '@/stores'
 
 export function Customers() {
   const navigate = useNavigate()
+  const showToast = useUIStore((state) => state.showToast)
+  const [loading, setLoading] = useState(true)
+  const [customers, setCustomers] = useState<Customer[]>([])
   const [searchQuery, setSearchQuery] = useState('')
-  const [paymentHistoryFilter, setPaymentHistoryFilter] = useState<'all' | 'excellent' | 'good' | 'fair' | 'poor'>('all')
 
-  // Filter customers based on search and payment history
+  useEffect(() => {
+    fetchCustomers()
+  }, [])
+
+  const fetchCustomers = async () => {
+    try {
+      setLoading(true)
+      const response = await customerService.getCustomers({ limit: 100 })
+      setCustomers(response.customers)
+    } catch (error) {
+      console.error('Error fetching customers:', error)
+      showToast('Failed to load customers', 'error')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Filter customers based on search
   const filteredCustomers = useMemo(() => {
     return customers.filter(customer => {
       const matchesSearch = 
         customer.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        customer.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        customer.city.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        customer.state.toLowerCase().includes(searchQuery.toLowerCase())
+        (customer.email || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (customer.company || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (customer.phone || '').toLowerCase().includes(searchQuery.toLowerCase())
       
-      const matchesPaymentHistory = paymentHistoryFilter === 'all' || customer.paymentHistory === paymentHistoryFilter
-      
-      return matchesSearch && matchesPaymentHistory
+      return matchesSearch
     })
-  }, [searchQuery, paymentHistoryFilter])
+  }, [customers, searchQuery])
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('en-US', {
@@ -34,14 +51,15 @@ export function Customers() {
     }).format(value)
   }
 
-  const getPaymentHistoryBadge = (history: string) => {
-    const map = {
-      excellent: { variant: 'default' as const, label: 'Excellent' },
-      good: { variant: 'secondary' as const, label: 'Good' },
-      fair: { variant: 'medium' as const, label: 'Fair' },
-      poor: { variant: 'destructive' as const, label: 'Poor' }
-    }
-    return map[history as keyof typeof map]
+  if (loading) {
+    return (
+      <div className="p-8 flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-slate-600">Loading customers...</p>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -74,22 +92,6 @@ export function Customers() {
               </button>
             )}
           </div>
-
-          {/* Payment History Filter */}
-          <div className="flex items-center gap-2 min-w-55">
-            <Filter className="h-4 w-4 text-slate-400" />
-            <select
-              value={paymentHistoryFilter}
-              onChange={(e) => setPaymentHistoryFilter(e.target.value as 'all' | 'excellent' | 'good' | 'fair' | 'poor')}
-              className="flex-1 px-3 py-2 rounded-lg border border-slate-200 bg-white focus:border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-200 text-sm"
-            >
-              <option value="all">All Payment History</option>
-              <option value="excellent">Excellent</option>
-              <option value="good">Good</option>
-              <option value="fair">Fair</option>
-              <option value="poor">Poor</option>
-            </select>
-          </div>
         </div>
         
         {/* Results count */}
@@ -119,7 +121,7 @@ export function Customers() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-red-600">
-              {formatCurrency(customers.reduce((sum, c) => sum + c.totalOwed, 0))}
+              {formatCurrency(customers.reduce((sum, c) => sum + (c.total_owed || 0), 0))}
             </div>
           </CardContent>
         </Card>
@@ -127,12 +129,12 @@ export function Customers() {
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium text-slate-500">
-              Active Cases
+              Average Debt
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-slate-900">
-              {customers.reduce((sum, c) => sum + c.activeCases, 0)}
+              {customers.length > 0 ? formatCurrency(customers.reduce((sum, c) => sum + (c.total_owed || 0), 0) / customers.length) : '$0'}
             </div>
           </CardContent>
         </Card>
@@ -140,12 +142,12 @@ export function Customers() {
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium text-slate-500">
-              Excellent History
+              With Active Cases
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-emerald-600">
-              {customers.filter(c => c.paymentHistory === 'excellent').length}
+              {customers.filter(c => (c.total_owed || 0) > 0).length}
             </div>
           </CardContent>
         </Card>
@@ -161,21 +163,15 @@ export function Customers() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => {
-                  setSearchQuery('')
-                  setPaymentHistoryFilter('all')
-                }}
+                onClick={() => setSearchQuery('')}
                 className="mt-4"
               >
-                Clear Filters
+                Clear Search
               </Button>
             </CardContent>
           </Card>
         ) : (
-          filteredCustomers.map((customer) => {
-            const historyBadge = getPaymentHistoryBadge(customer.paymentHistory)
-          
-            return (
+          filteredCustomers.map((customer) => (
             <Card 
               key={customer.id}
               className="cursor-pointer transition-all hover:shadow-md hover:border-slate-300"
@@ -193,57 +189,62 @@ export function Customers() {
                         <h3 className="text-lg font-semibold text-slate-900">
                           {customer.name}
                         </h3>
-                        <Badge variant={historyBadge.variant}>
-                          {historyBadge.label} History
-                        </Badge>
+                        {customer.email && (
+                          <span className="text-sm text-slate-500">
+                            {customer.email}
+                          </span>
+                        )}
                         <span className="text-xs text-slate-400 font-mono">
                           {customer.id}
                         </span>
                       </div>
                       
                       <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 mt-4">
-                        <div className="flex items-center gap-2">
-                          <MapPin className="h-4 w-4 text-slate-400" />
-                          <div>
-                            <p className="text-xs text-slate-500">Location</p>
-                            <p className="text-sm font-medium text-slate-900">
-                              {customer.city}, {customer.state}
-                            </p>
+                        {(customer.address || customer.company) && (
+                          <div className="flex items-center gap-2">
+                            <MapPin className="h-4 w-4 text-slate-400" />
+                            <div>
+                              <p className="text-xs text-slate-500">Location</p>
+                              <p className="text-sm font-medium text-slate-900">
+                                {customer.address || customer.company || 'N/A'}
+                              </p>
+                            </div>
                           </div>
-                        </div>
+                        )}
                         
                         <div className="flex items-center gap-2">
                           <DollarSign className="h-4 w-4 text-slate-400" />
                           <div>
                             <p className="text-xs text-slate-500">Total Owed</p>
                             <p className="text-sm font-semibold text-red-600">
-                              {formatCurrency(customer.totalOwed)}
+                              {formatCurrency(customer.total_owed || 0)}
                             </p>
                           </div>
                         </div>
                         
-                        <div className="flex items-center gap-2">
-                          <Briefcase className="h-4 w-4 text-slate-400" />
-                          <div>
-                            <p className="text-xs text-slate-500">Active Cases</p>
-                            <p className="text-sm font-semibold text-slate-900">
-                              {customer.activeCases}
-                            </p>
+                        {customer.phone && (
+                          <div className="flex items-center gap-2">
+                            <Phone className="h-4 w-4 text-slate-400" />
+                            <div>
+                              <p className="text-xs text-slate-500">Phone</p>
+                              <p className="text-sm font-medium text-slate-900">
+                                {customer.phone}
+                              </p>
+                            </div>
                           </div>
-                        </div>
+                        )}
                         
-                        <div className="flex items-center gap-2">
-                          <Phone className="h-4 w-4 text-slate-400" />
-                          <div>
-                            <p className="text-xs text-slate-500">Last Contact</p>
-                            <p className="text-sm font-medium text-slate-900">
-                              {new Date(customer.lastContact).toLocaleDateString('en-US', {
-                                month: 'short',
-                                day: 'numeric'
-                              })}
-                            </p>
+                        {customer.company && (
+                          <div className="flex items-center gap-2">
+                            <Briefcase className="h-4 w-4 text-slate-400" />
+                            <div>
+                              <p className="text-xs text-slate-500">Company</p>
+                              <p className="text-sm font-medium text-slate-900">
+                                {customer.company}
+                              </p>
+                            </div>
                           </div>
-                        </div>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -252,8 +253,8 @@ export function Customers() {
                 </div>
               </CardContent>
             </Card>
-          )
-        }))}
+          ))
+        )}
       </div>
     </div>
   )

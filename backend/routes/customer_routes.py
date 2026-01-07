@@ -9,14 +9,25 @@ def get_customers():
     limit = request.args.get('limit', 10, type=int)
     search = request.args.get('search', '')
     
-    query = Customer.query
+    # join this with cases and add the total_owed column
+    query = db.session.query(Customer, Case.invoice_amount.label("total_owed")).join(
+        Case, Customer.id == Case.customer_id
+    )
+
     if search:
         query = query.filter(Customer.name.ilike(f'%{search}%'))
         
     pagination = query.paginate(page=page, per_page=limit, error_out=False)
-    
+
+    # 2. Map the results to merge the column into the dictionary
+    customer_list = []
+    for customer_obj, total_owed in pagination.items:
+        data = customer_obj.to_dict()
+        data['total_owed'] = total_owed  # Inject the new column
+        customer_list.append(data)
+
     return jsonify({
-        'customers': [c.to_dict() for c in pagination.items],
+        'customers': customer_list,
         'total': pagination.total,
         'pages': pagination.pages,
         'current_page': page

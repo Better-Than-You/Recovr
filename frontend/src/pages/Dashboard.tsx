@@ -4,18 +4,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { ConfirmationModal } from '@/components/ui/confirmation-modal'
-import { dashboardStats, mockCases, agencies } from '@/data/mockData'
-import { DollarSign, TrendingUp, Users, Clock, Radio, Zap, AlertCircle, CheckCircle2 } from 'lucide-react'
+import { DollarSign, TrendingUp, Users, Clock, Radio, Zap, AlertCircle } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts'
-
-const recoveryTrendData = [
-  { month: 'Aug', recovered: 420000, target: 450000 },
-  { month: 'Sep', recovered: 510000, target: 500000 },
-  { month: 'Oct', recovered: 580000, target: 550000 },
-  { month: 'Nov', recovered: 625000, target: 600000 },
-  { month: 'Dec', recovered: 590000, target: 650000 },
-  { month: 'Jan', recovered: 710000, target: 700000 }
-]
+import { dashboardService, type DashboardStats } from '@/services/dashboardService'
+import { caseService, type Case } from '@/services/caseService'
+import { agencyService, type Agency } from '@/services/agencyService'
+import { useUIStore } from '@/stores'
 
 const agingBucketData = [
   { bucket: '0-30', count: 15, amount: 234000 },
@@ -26,21 +20,62 @@ const agingBucketData = [
 
 export function Dashboard() {
   const navigate = useNavigate()
+  const showToast = useUIStore((state) => state.showToast)
   const [lastUpdate, setLastUpdate] = useState(new Date())
   const [isAutoAssignModalOpen, setIsAutoAssignModalOpen] = useState(false)
-  const [selectedCaseId, setSelectedCaseId] = useState<string | null>(null)
+  const [initialLoading, setInitialLoading] = useState(true)
+  const [stats, setStats] = useState<DashboardStats | null>(null)
+  const [cases, setCases] = useState<Case[]>([])
+  const [agencies, setAgencies] = useState<Agency[]>([])
+  const [recoveryTrendData, setRecoveryTrendData] = useState<any[]>([])
+  
+  // Fetch dashboard data
+  useEffect(() => {
+    fetchDashboardData(true)
+  }, [])
+  
+  const fetchDashboardData = async (isInitial = false) => {
+    try {
+      if (isInitial) {
+        setInitialLoading(true)
+      }
+      const [statsData, casesData, agenciesData, recoveryData] = await Promise.all([
+        dashboardService.getDashboardStats(),
+        caseService.getCases({ status: 'pending', limit: 100 }),
+        agencyService.getAgencies(),
+        dashboardService.getRecoveryStats()
+      ])
+      
+      setStats(statsData)
+      setCases(casesData.cases)
+      setAgencies(agenciesData)
+      setRecoveryTrendData(recoveryData.map(r => ({ 
+        month: r.month, 
+        recovered: r.recovered, 
+        target: r.recovered * 1.1 
+      })))
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error)
+      showToast('Failed to load dashboard data', 'error')
+    } finally {
+      if (isInitial) {
+        setInitialLoading(false)
+      }
+    }
+  }
   
   // Simulate live updates every 30 seconds
   useEffect(() => {
     const interval = setInterval(() => {
       setLastUpdate(new Date())
-    }, 30000)
+      fetchDashboardData() // Refresh data
+    }, 2000)
     
     return () => clearInterval(interval)
   }, [])
 
   // Get new unassigned cases
-  const newCases = mockCases.filter(c => c.status === 'pending' && !c.assignedAgency)
+  const newCases = cases.filter(c => c.status === 'pending' && !c.assigned_agency_id)
   
   // Calculate hours since case creation
   const getHoursSinceCreation = (createdAt: string) => {
@@ -64,14 +99,31 @@ export function Dashboard() {
   }
   
   // Auto-assign cases past their individual thresholds
-  const handleAutoAssignAll = () => {
-    const casesToAssign = newCases.filter(c => {
-      const threshold = c.autoAssignAfterHours || 24
-      return getHoursSinceCreation(c.createdAt) >= threshold
-    })
-    console.log(`Auto-assigning ${casesToAssign.length} cases`)
-    setIsAutoAssignModalOpen(false)
-    // In real app, this would make API call
+  const handleAutoAssignAll = async () => {
+    try {
+      const casesToAssign = newCases.filter(c => {
+        const threshold = 24 // Default threshold
+        return getHoursSinceCreation(c.created_at) >= threshold
+      })
+      
+      // Assign each case to best agency (simplified)
+      for (const caseItem of casesToAssign) {
+        const bestAgency = agencies.sort((a, b) => 
+          (b.performance_score || 0) - (a.performance_score || 0)
+        )[0]
+        
+        if (bestAgency) {
+          await caseService.assignCase(caseItem.id, bestAgency.id)
+        }
+      }
+      
+      showToast(`Successfully assigned ${casesToAssign.length} cases`, 'success')
+      setIsAutoAssignModalOpen(false)
+      fetchDashboardData() // Refresh data
+    } catch (error) {
+      console.error('Error auto-assigning cases:', error)
+      showToast('Failed to auto-assign cases', 'error')
+    }
   }
   
   const handleManualAssign = (caseId: string) => {
@@ -84,6 +136,17 @@ export function Dashboard() {
       currency: 'USD',
       minimumFractionDigits: 0
     }).format(value)
+  }
+
+  if (initialLoading) {
+    return (
+      <div className="p-8 flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-slate-600">Loading dashboard...</p>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -120,8 +183,8 @@ export function Dashboard() {
                   size="sm"
                   onClick={() => setIsAutoAssignModalOpen(true)}
                   disabled={newCases.filter(c => {
-                    const threshold = c.autoAssignAfterHours || 24
-                    return getHoursSinceCreation(c.createdAt) >= threshold
+                    const threshold = 24
+                    return getHoursSinceCreation(c.created_at) >= threshold
                   }).length === 0}
                 >
                   <Zap className="h-4 w-4 mr-2" />
@@ -136,20 +199,20 @@ export function Dashboard() {
           <CardContent>
             <div className="space-y-3">
               {newCases.map((caseItem) => {
-                const hoursSince = getHoursSinceCreation(caseItem.createdAt)
-                const autoAssignThreshold = caseItem.autoAssignAfterHours || 24
+                const hoursSince = getHoursSinceCreation(caseItem.created_at)
+                const autoAssignThreshold = 24 // Default threshold
                 const willAutoAssignIn = Math.max(0, autoAssignThreshold - hoursSince)
                 const isOverdue = hoursSince >= autoAssignThreshold
                 const hoursOverdue = hoursSince - autoAssignThreshold
                 
                 return (
                   <div 
-                    key={caseItem.caseId}
+                    key={caseItem.id}
                     className="flex items-center gap-4 p-4 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors"
                   >
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
-                        <p className="font-medium text-slate-900">{caseItem.customerName}</p>
+                        <p className="font-medium text-slate-900">{caseItem.customer_name}</p>
                         {isOverdue && (
                           <Badge variant="destructive" className="text-xs">
                             <AlertCircle className="h-3 w-3 mr-1" />
@@ -160,7 +223,7 @@ export function Dashboard() {
                         </Badge>
                       </div>
                       <div className="flex items-center gap-4 text-sm text-slate-600">
-                        <span className="font-mono text-xs">{caseItem.caseId}</span>
+                        <span className="font-mono text-xs">{caseItem.id}</span>
                         <span>•</span>
                         <span className="font-semibold text-slate-900">{formatCurrency(caseItem.amount)}</span>
                         <span>•</span>
@@ -178,16 +241,16 @@ export function Dashboard() {
                     <div className="flex items-center gap-2">
                       <Badge 
                         variant={
-                          caseItem.recoveryProbability >= 0.8 ? 'success' : 
-                          caseItem.recoveryProbability >= 0.6 ? 'high' : 
+                          caseItem.recovery_probability >= 0.8 ? 'success' : 
+                          caseItem.recovery_probability >= 0.6 ? 'high' : 
                           'warning'
                         }
                       >
-                        {(caseItem.recoveryProbability * 100).toFixed(0)}% Recovery
+                        {(caseItem.recovery_probability * 100).toFixed(0)}% Recovery
                       </Badge>
                       <Button
                         size="sm"
-                        onClick={() => handleManualAssign(caseItem.caseId)}
+                        onClick={() => handleManualAssign(caseItem.id)}
                       >
                         Manual Assign
                       </Button>
@@ -211,10 +274,10 @@ export function Dashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-slate-900">
-              {formatCurrency(dashboardStats.totalOutstanding)}
+              {formatCurrency(stats?.totalDebt || 0)}
             </div>
             <p className="text-xs text-slate-500 mt-1">
-              Across {dashboardStats.pendingCases} cases
+              Across {stats?.totalCases || 0} cases
             </p>
           </CardContent>
         </Card>
@@ -228,10 +291,10 @@ export function Dashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-slate-900">
-              {(dashboardStats.recoveryRate * 100).toFixed(0)}%
+              {(stats?.recoveryRate || 0).toFixed(0)}%
             </div>
             <p className="text-xs text-green-600 mt-1">
-              +5.2% from last month
+              ${formatCurrency(stats?.recoveredAmount || 0)} recovered
             </p>
           </CardContent>
         </Card>
@@ -245,10 +308,10 @@ export function Dashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-slate-900">
-              {dashboardStats.activeAgencies}
+              {agencies.length}
             </div>
             <p className="text-xs text-slate-500 mt-1">
-              Managing {mockCases.filter(c => c.assignedAgency).length} assigned cases
+              Managing {cases.filter(c => c.assigned_agency_id).length} assigned cases
             </p>
           </CardContent>
         </Card>
@@ -256,16 +319,16 @@ export function Dashboard() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-slate-500">
-              Avg. Recovery Time
+              Active Cases
             </CardTitle>
             <Clock className="h-4 w-4 text-slate-400" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-slate-900">
-              {dashboardStats.averageRecoveryTime} days
+              {stats?.activeCases || 0}
             </div>
             <p className="text-xs text-slate-500 mt-1">
-              {dashboardStats.resolvedThisMonth} resolved this month
+              {stats?.resolvedCases || 0} resolved
             </p>
           </CardContent>
         </Card>
@@ -376,22 +439,22 @@ export function Dashboard() {
                 <div className="flex-1">
                   <p className="text-sm font-medium text-slate-900">{agency.name}</p>
                   <p className="text-xs text-slate-500">
-                    {agency.activeCases} active cases
+                    {agency.active_cases || 0} active cases
                   </p>
                 </div>
                 <div className="text-right">
                   <p className="text-sm font-semibold text-slate-900">
-                    {formatCurrency(agency.totalRecovered)}
+                    {formatCurrency(agency.recovered_amount || 0)}
                   </p>
                   <Badge 
                     variant={
-                      agency.performanceScore >= 0.9 ? 'success' : 
-                      agency.performanceScore >= 0.8 ? 'high' : 
+                      (agency.performance_score || 0) >= 0.9 ? 'success' : 
+                      (agency.performance_score || 0) >= 0.8 ? 'high' : 
                       'medium'
                     }
                     className="mt-1"
                   >
-                    {(agency.performanceScore * 100).toFixed(0)}% Score
+                    {((agency.performance_score || 0) * 100).toFixed(0)}% Score
                   </Badge>
                 </div>
               </div>
@@ -407,8 +470,8 @@ export function Dashboard() {
         onConfirm={handleAutoAssignAll}
         title="Auto-Assign Cases?"
         message={`This will automatically assign ${newCases.filter(c => {
-          const threshold = c.autoAssignAfterHours || 24
-          return getHoursSinceCreation(c.createdAt) >= threshold
+          const threshold = 24
+          return getHoursSinceCreation(c.created_at) >= threshold
         }).length} case(s) that have exceeded their auto-assign threshold to the best available collection agency based on performance scores and workload.`}
         confirmText="Auto-Assign"
         cancelText="Cancel"

@@ -1,15 +1,36 @@
+import { useState, useMemo, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { agencies } from '@/data/mockData'
 import { Building2, TrendingUp, Briefcase, ChevronRight, DollarSign, Search, Filter, X } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
-import { useState, useMemo } from 'react'
+import { agencyService, type Agency } from '@/services/agencyService'
+import { useUIStore } from '@/stores'
 
 export function Agencies() {
   const navigate = useNavigate()
+  const showToast = useUIStore((state) => state.showToast)
+  const [loading, setLoading] = useState(true)
+  const [agencies, setAgencies] = useState<Agency[]>([])
   const [searchQuery, setSearchQuery] = useState('')
   const [performanceFilter, setPerformanceFilter] = useState<'all' | 'high' | 'medium' | 'low'>('all')
+
+  useEffect(() => {
+    fetchAgencies()
+  }, [])
+
+  const fetchAgencies = async () => {
+    try {
+      setLoading(true)
+      const data = await agencyService.getAgencies()
+      setAgencies(data)
+    } catch (error) {
+      console.error('Error fetching agencies:', error)
+      showToast('Failed to load agencies', 'error')
+    } finally {
+      setLoading(false)
+    }
+  }
 
   // Filter agencies based on search and performance
   const filteredAgencies = useMemo(() => {
@@ -18,16 +39,16 @@ export function Agencies() {
       
       let matchesPerformance = true
       if (performanceFilter === 'high') {
-        matchesPerformance = agency.performanceScore >= 0.9
+        matchesPerformance = (agency.performance_score || 0) >= 0.9
       } else if (performanceFilter === 'medium') {
-        matchesPerformance = agency.performanceScore >= 0.8 && agency.performanceScore < 0.9
+        matchesPerformance = (agency.performance_score || 0) >= 0.8 && (agency.performance_score || 0) < 0.9
       } else if (performanceFilter === 'low') {
-        matchesPerformance = agency.performanceScore < 0.8
+        matchesPerformance = (agency.performance_score || 0) < 0.8
       }
       
       return matchesSearch && matchesPerformance
     })
-  }, [searchQuery, performanceFilter])
+  }, [agencies, searchQuery, performanceFilter])
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('en-US', {
@@ -35,6 +56,17 @@ export function Agencies() {
       currency: 'USD',
       minimumFractionDigits: 0
     }).format(value)
+  }
+
+  if (loading) {
+    return (
+      <div className="p-8 flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-slate-600">Loading agencies...</p>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -69,7 +101,7 @@ export function Agencies() {
           </div>
 
           {/* Performance Filter */}
-          <div className="flex items-center gap-2 min-w-[200px]">
+          <div className="flex items-center gap-2 min-w-50">
             <Filter className="h-4 w-4 text-slate-400" />
             <select
               value={performanceFilter}
@@ -111,7 +143,7 @@ export function Agencies() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-emerald-600">
-              {((agencies.reduce((sum, a) => sum + a.performanceScore, 0) / agencies.length) * 100).toFixed(0)}%
+              {agencies.length > 0 ? ((agencies.reduce((sum, a) => sum + (a.performanceScore || a.performance_score || 0), 0) / agencies.length) * 100).toFixed(0) : 0}%
             </div>
           </CardContent>
         </Card>
@@ -124,7 +156,7 @@ export function Agencies() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-blue-600">
-              {formatCurrency(agencies.reduce((sum, a) => sum + a.totalRecovered, 0))}
+              {formatCurrency(agencies.reduce((sum, a) => sum + (a.totalRecovered || a.recovered_amount || 0), 0))}
             </div>
           </CardContent>
         </Card>
@@ -137,7 +169,7 @@ export function Agencies() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-slate-900">
-              {agencies.reduce((sum, a) => sum + a.activeCases, 0)}
+              {agencies.reduce((sum, a) => sum + (a.activeCases || a.active_cases || 0), 0)}
             </div>
           </CardContent>
         </Card>
@@ -184,12 +216,12 @@ export function Agencies() {
                       </h3>
                       <Badge 
                         variant={
-                          agency.performanceScore >= 0.9 ? 'default' :
-                          agency.performanceScore >= 0.8 ? 'secondary' :
+                          (agency.performanceScore || agency.performance_score || 0) >= 0.9 ? 'default' :
+                          (agency.performanceScore || agency.performance_score || 0) >= 0.8 ? 'secondary' :
                           'outline'
                         }
                       >
-                        {(agency.performanceScore * 100).toFixed(0)}% Performance
+                        {((agency.performanceScore || agency.performance_score || 0) * 100).toFixed(0)}% Performance
                       </Badge>
                     </div>
                     
@@ -199,7 +231,7 @@ export function Agencies() {
                         <div>
                           <p className="text-xs text-slate-500">Total Recovered</p>
                           <p className="text-sm font-semibold text-slate-900">
-                            {formatCurrency(agency.totalRecovered)}
+                            {formatCurrency(agency.totalRecovered || agency.recovered_amount || 0)}
                           </p>
                         </div>
                       </div>
@@ -209,7 +241,7 @@ export function Agencies() {
                         <div>
                           <p className="text-xs text-slate-500">Active Cases</p>
                           <p className="text-sm font-semibold text-slate-900">
-                            {agency.activeCases}
+                            {agency.activeCases || agency.active_cases || 0}
                           </p>
                         </div>
                       </div>
@@ -219,7 +251,7 @@ export function Agencies() {
                         <div>
                           <p className="text-xs text-slate-500">Success Rate</p>
                           <p className="text-sm font-semibold text-emerald-600">
-                            {(agency.performanceScore * 100).toFixed(0)}%
+                            {((agency.performanceScore || agency.performance_score || 0) * 100).toFixed(0)}%
                           </p>
                         </div>
                       </div>
