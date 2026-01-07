@@ -6,7 +6,7 @@ import { TrendingUp, TrendingDown } from 'lucide-react'
 
 const performanceData = agencies.map(agency => ({
   name: agency.name.split(' ')[0], // Shortened name for chart
-  recovered: agency.totalRecovered / 1000, // in thousands
+  active_outstanding: agency.activeOutstandingAmount / 1000, // in thousands
   cases: agency.activeCases,
   score: agency.performanceScore * 100
 }))
@@ -32,7 +32,7 @@ export function AgencyPerformance() {
       <Card className="mb-8">
         <CardHeader>
           <CardTitle>Recovery Performance Comparison</CardTitle>
-          <CardDescription>Total recovered amounts by agency</CardDescription>
+          <CardDescription>Active outstanding amount by agency</CardDescription>
         </CardHeader>
         <CardContent>
           <ResponsiveContainer width="100%" height={350}>
@@ -60,7 +60,7 @@ export function AgencyPerformance() {
                 dataKey="recovered" 
                 fill="#3b82f6" 
                 radius={[8, 8, 0, 0]}
-                name="Total Recovered"
+                name="Active Outstanding"
               />
             </BarChart>
           </ResponsiveContainer>
@@ -92,9 +92,9 @@ export function AgencyPerformance() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <p className="text-sm text-slate-500">Total Recovered</p>
+                <p className="text-sm text-slate-500">Active Outstanding</p>
                 <p className="text-2xl font-bold text-slate-900 mt-1">
-                  {formatCurrency(agency.totalRecovered)}
+                  {formatCurrency(agency.activeOutstandingAmount)}
                 </p>
               </div>
 
@@ -108,7 +108,7 @@ export function AgencyPerformance() {
                 <div>
                   <p className="text-sm text-slate-500">Avg per Case</p>
                   <p className="text-xl font-semibold text-slate-900 mt-1">
-                    {formatCurrency(agency.totalRecovered / agency.activeCases)}
+                    {formatCurrency(agency.activeOutstandingAmount / agency.activeCases)}
                   </p>
                 </div>
               </div>

@@ -116,6 +116,20 @@ export const caseService = {
     const response = await api.post(`/cases/${caseId}/call`, data);
     return response.data;
   },
+
+  /**
+   * Add a custom timeline event to a case
+   */
+  async addTimelineEvent(caseId: string, data: {
+    eventType: string;
+    title: string;
+    actor: string;
+    description?: string;
+    metadata?: any;
+  }): Promise<{ message: string; event: TimelineEvent }> {
+    const response = await api.post(`/cases/${caseId}/timeline`, data);
+    return response.data;
+  },
 };
 
 export default caseService;

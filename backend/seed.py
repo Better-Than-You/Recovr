@@ -48,11 +48,11 @@ def seed_data():
                           'Asset Recovery', 'Credit Solutions', 'Recovery Partners', 'Collection Experts']
         
         agencies = [
-            Agency(id='prs', name='Premier Recovery Solutions', performance_score=0.87, total_recovered=2345000, 
+            Agency(id='prs', name='Premier Recovery Solutions', performance_score=0.87, active_outstanding_amount=2345000, 
                   email='contact@premier.com', phone='+1 (555) 100-0001'),
-            Agency(id='eca', name='Elite Collection Agency', performance_score=0.92, total_recovered=3120000, 
+            Agency(id='eca', name='Elite Collection Agency', performance_score=0.92, active_outstanding_amount=3120000, 
                   email='contact@elite.com', phone='+1 (555) 100-0002'),
-            Agency(id='rra', name='Rapid Recovery Associates', performance_score=0.79, total_recovered=1890000, 
+            Agency(id='rra', name='Rapid Recovery Associates', performance_score=0.79, active_outstanding_amount=1890000, 
                   email='contact@rapid.com', phone='+1 (555) 100-0003'),
         ]
         
@@ -72,7 +72,7 @@ def seed_data():
                 id=agency_id,
                 name=name,
                 performance_score=round(random.uniform(0.65, 0.98), 2),
-                total_recovered=random.randint(500000, 5000000),
+                active_outstanding_amount=random.randint(500000, 5000000),
                 email=f'contact@{prefix.lower()}{suffix.split()[0].lower()}.com',
                 phone=f'+1 (555) {random.randint(100, 999)}-{random.randint(1000, 9999)}'
             ))
@@ -237,7 +237,7 @@ def seed_data():
                     event.meta_amount = random.randint(min(5000, max_payment), max(5000, max_payment))
                 elif event_type == 'email':
                     event.meta_email_subject = f'{title} - {case.account_number}'
-                    event.meta_email_content = f'Content for {title} related to account {case.account_number}'
+                    event.meta_email_subject = f'{title} - {case.account_number}'
                 elif event_type == 'status_change':
                     event.meta_previous_status = random.choice(['pending', 'overdue', 'assigned'])
                     event.meta_new_status = case.status

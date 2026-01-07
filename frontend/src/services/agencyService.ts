@@ -7,7 +7,7 @@ export interface Agency {
   name: string;
   performance_score: number;
   active_cases: number;
-  recovered_amount: number;
+  active_outstanding_amount: number;
   success_rate: number;
   contact_email?: string;
   contact_phone?: string;

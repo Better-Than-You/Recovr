@@ -7,7 +7,9 @@ import { ArrowLeft, Mail, Phone, FileText, AlertCircle, Scale, User, ChevronDown
 import { cn } from '@/lib/utils'
 import { useState } from 'react'
 import { ConfirmationModal } from '@/components/ui/confirmation-modal'
+import { Modal } from '@/components/ui/modal'
 import { useUIStore } from '@/stores'
+import { caseService } from '@/services/caseService'
 
 const eventIcons = {
   email: Mail,
@@ -30,6 +32,14 @@ export function CaseDetail() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc') // desc = newest first
   const [isReassignModalOpen, setIsReassignModalOpen] = useState(false)
+  const [isAddEventModalOpen, setIsAddEventModalOpen] = useState(false)
+  const [isSubmittingEvent, setIsSubmittingEvent] = useState(false)
+  const [eventForm, setEventForm] = useState({
+    eventType: 'email',
+    title: '',
+    actor: 'fedex',
+    description: ''
+  })
   
   const caseData = mockCases.find(c => c.caseId === caseId)
   const timelineRaw = mockTimelineData[caseId || ''] || []
@@ -63,6 +73,46 @@ export function CaseDetail() {
     showToast('Case reassigned successfully', 'success')
     // Simulate delay then navigate
     setTimeout(() => navigate('/case-allocation'), 500)
+  }
+
+  const handleAddTimelineEvent = async () => {
+    if (!caseId) return
+    
+    // Validate form
+    if (!eventForm.title.trim()) {
+      showToast('Please enter a title for the event', 'error')
+      return
+    }
+    
+    setIsSubmittingEvent(true)
+    
+    try {
+      await caseService.addTimelineEvent(caseId, {
+        eventType: eventForm.eventType,
+        title: eventForm.title,
+        actor: eventForm.actor as 'fedex' | 'dca' | 'customer',
+        description: eventForm.description
+      })
+      
+      showToast('Timeline event added successfully', 'success')
+      setIsAddEventModalOpen(false)
+      
+      // Reset form
+      setEventForm({
+        eventType: 'email',
+        title: '',
+        actor: 'fedex',
+        description: ''
+      })
+      
+      // Reload the page to show the new event
+      window.location.reload()
+    } catch (error) {
+      console.error('Error adding timeline event:', error)
+      showToast('Failed to add timeline event', 'error')
+    } finally {
+      setIsSubmittingEvent(false)
+    }
   }
 
   // Determine receiver based on actor and event type
@@ -481,6 +531,14 @@ export function CaseDetail() {
                     <Phone className="h-4 w-4 mr-2" />
                     Schedule Call
                   </Button>
+                  <Button 
+                    variant="outline" 
+                    className="w-full"
+                    onClick={() => setIsAddEventModalOpen(true)}
+                  >
+                    <FileText className="h-4 w-4 mr-2" />
+                    Add Timeline Event
+                  </Button>
                 </div>
               </CardContent>
             </Card>
@@ -506,10 +564,113 @@ export function CaseDetail() {
         onConfirm={handleReassign}
         title="Reassign Case?"
         message={`Are you sure you want to reassign case ${caseData.caseId} from ${caseData.assignedAgency}? This will move the case to the assignment queue for redistribution.`}
-        confirmText="Reassign Case"
-        cancelText="Cancel"
+        confirmText="Implemented"
+        cancelText="To be"
         type="warning"
+        isDisabled={true}
       />
+
+      {/* Add Timeline Event Modal */}
+      <Modal
+        isOpen={isAddEventModalOpen}
+        onClose={() => {
+          setIsAddEventModalOpen(false)
+          setEventForm({
+            eventType: 'email',
+            title: '',
+            actor: 'fedex',
+            description: ''
+          })
+        }}
+        title="Add Timeline Event"
+        size="md"
+      >
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-2">
+              Event Type
+            </label>
+            <select
+              className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              value={eventForm.eventType}
+              onChange={(e) => setEventForm({ ...eventForm, eventType: e.target.value })}
+            >
+              <option value="email">Email</option>
+              <option value="call">Call</option>
+              <option value="status_change">Status Change</option>
+              <option value="payment">Payment</option>
+              <option value="legal_notice">Legal Notice</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-2">
+              Actor
+            </label>
+            <select
+              className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              value={eventForm.actor}
+              onChange={(e) => setEventForm({ ...eventForm, actor: e.target.value })}
+            >
+              <option value="fedex">FedEx</option>
+              <option value="dca">DCA</option>
+              <option value="customer">Customer</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-2">
+              Title *
+            </label>
+            <input
+              type="text"
+              className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Enter event title"
+              value={eventForm.title}
+              onChange={(e) => setEventForm({ ...eventForm, title: e.target.value })}
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-2">
+              Description
+            </label>
+            <textarea
+              className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Enter event description (optional)"
+              rows={4}
+              value={eventForm.description}
+              onChange={(e) => setEventForm({ ...eventForm, description: e.target.value })}
+            />
+          </div>
+
+          <div className="flex gap-3 pt-4">
+            <Button
+              variant="outline"
+              className="flex-1"
+              onClick={() => {
+                setIsAddEventModalOpen(false)
+                setEventForm({
+                  eventType: 'email',
+                  title: '',
+                  actor: 'fedex',
+                  description: ''
+                })
+              }}
+              disabled={isSubmittingEvent}
+            >
+              Cancel
+            </Button>
+            <Button
+              className="flex-1"
+              onClick={handleAddTimelineEvent}
+              disabled={isSubmittingEvent}
+            >
+              {isSubmittingEvent ? 'Adding...' : 'Add Event'}
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   )
 }

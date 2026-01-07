@@ -76,10 +76,10 @@ export function AgencyDetail() {
                 <div>
                   <div className="flex items-center gap-2 mb-2">
                     <DollarSign className="h-5 w-5 text-blue-600" />
-                    <p className="text-sm text-slate-500">Total Recovered</p>
+                    <p className="text-sm text-slate-500">Active Outstanding</p>
                   </div>
                   <p className="text-2xl font-bold text-slate-900">
-                    {formatCurrency(agency.totalRecovered)}
+                    {formatCurrency(agency.activeOutstandingAmount)}
                   </p>
                 </div>
                 

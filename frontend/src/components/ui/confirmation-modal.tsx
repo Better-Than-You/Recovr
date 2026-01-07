@@ -15,6 +15,7 @@ interface ConfirmationModalProps {
   cancelText?: string
   type?: ConfirmationType
   isLoading?: boolean
+  isDisabled?: boolean
 }
 
 export function ConfirmationModal({
@@ -26,7 +27,8 @@ export function ConfirmationModal({
   confirmText = 'Confirm',
   cancelText = 'Cancel',
   type = 'info',
-  isLoading = false
+  isLoading = false,
+  isDisabled = false
 }: ConfirmationModalProps) {
   const icons = {
     danger: <XCircle className="h-12 w-12 text-red-500" />,
@@ -61,7 +63,7 @@ export function ConfirmationModal({
           <Button
             variant="outline"
             onClick={onClose}
-            disabled={isLoading}
+            disabled={isLoading || isDisabled}
             className="flex-1"
           >
             {cancelText}
@@ -69,7 +71,7 @@ export function ConfirmationModal({
           <Button
             variant={buttonVariants[type]}
             onClick={onConfirm}
-            disabled={isLoading}
+            disabled={isLoading || isDisabled}
             className="flex-1"
           >
             {isLoading ? 'Processing...' : confirmText}

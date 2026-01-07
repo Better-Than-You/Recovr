@@ -782,9 +782,9 @@ export const mockTimelineData: Record<string, TimelineEvent[]> = {
 };
 
 export const agencies = [
-  { id: 'prs', name: 'Premier Recovery Solutions', performanceScore: 0.87, totalRecovered: 2345000, activeCases: 45 },
-  { id: 'eca', name: 'Elite Collection Agency', performanceScore: 0.92, totalRecovered: 3120000, activeCases: 38 },
-  { id: 'rra', name: 'Rapid Recovery Associates', performanceScore: 0.79, totalRecovered: 1890000, activeCases: 52 }
+  { id: 'prs', name: 'Premier Recovery Solutions', performanceScore: 0.87, activeOutstandingAmount: 2345000, activeCases: 45 },
+  { id: 'eca', name: 'Elite Collection Agency', performanceScore: 0.92, activeOutstandingAmount: 3120000, activeCases: 38 },
+  { id: 'rra', name: 'Rapid Recovery Associates', performanceScore: 0.79, activeOutstandingAmount: 1890000, activeCases: 52 }
 ];
 
 export interface Customer {

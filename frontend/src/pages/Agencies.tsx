@@ -151,12 +151,12 @@ export function Agencies() {
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium text-slate-500">
-              Total Recovered
+              Active Outstanding
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-blue-600">
-              {formatCurrency(agencies.reduce((sum, a) => sum + (a.totalRecovered || a.recovered_amount || 0), 0))}
+              {formatCurrency(agencies.reduce((sum, a) => sum + (a.activeOutstandingAmount || a.active_outstanding_amount || 0), 0))}
             </div>
           </CardContent>
         </Card>
@@ -229,9 +229,9 @@ export function Agencies() {
                       <div className="flex items-center gap-2">
                         <DollarSign className="h-4 w-4 text-slate-400" />
                         <div>
-                          <p className="text-xs text-slate-500">Total Recovered</p>
+                          <p className="text-xs text-slate-500">Active Outstanding</p>
                           <p className="text-sm font-semibold text-slate-900">
-                            {formatCurrency(agency.totalRecovered || agency.recovered_amount || 0)}
+                            {formatCurrency(agency.activeOutstandingAmount || agency.active_outstanding_amount || 0)}
                           </p>
                         </div>
                       </div>

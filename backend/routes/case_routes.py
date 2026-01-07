@@ -76,7 +76,7 @@ def update_case(case_id):
     if 'status' in data:
         case.status = data['status']
     if 'amount' in data:
-        case.amount = data['amount']
+        case.invoice_amount = data['amount']
     
     # Handle other fields...
 
@@ -170,3 +170,58 @@ def log_call(case_id):
     db.session.commit()
     
     return jsonify({'message': 'Call logged', 'event': event.to_dict()})
+
+@cases_bp.route('/<case_id>/timeline', methods=['POST'])
+def add_timeline_event(case_id):
+    """Add a custom timeline event to a case"""
+    case = Case.query.get(case_id)
+    if not case:
+        return jsonify({'error': 'Case not found'}), 404
+    
+    data = request.json
+    
+    # Validate required fields
+    required = ['eventType', 'title', 'actor']
+    for field in required:
+        if field not in data:
+            return jsonify({'error': f'Missing required field: {field}'}), 400
+    
+    # Validate actor
+    valid_actors = ['fedex', 'dca', 'customer']
+    if data['actor'] not in valid_actors:
+        return jsonify({'error': f'Invalid actor. Must be one of: {valid_actors}'}), 400
+    
+    # Validate event type
+    valid_event_types = ['email', 'call', 'status_change', 'payment', 'legal_notice']
+    if data['eventType'] not in valid_event_types:
+        return jsonify({'error': f'Invalid event type. Must be one of: {valid_event_types}'}), 400
+    
+    # Create timeline event
+    event = TimelineEvent(
+        id=f"evt-{uuid.uuid4().hex[:8]}",
+        case_id=case_id,
+        timestamp=datetime.utcnow().isoformat() + 'Z',
+        actor=data['actor'],
+        event_type=data['eventType'],
+        title=data['title'],
+        description=data.get('description', '')
+    )
+    
+    # Add optional metadata fields
+    if 'metadata' in data:
+        metadata = data['metadata']
+        if 'amount' in metadata:
+            event.meta_amount = metadata['amount']
+        if 'emailSubject' in metadata:
+            event.meta_email_subject = metadata['emailSubject']
+        if 'emailContent' in metadata:
+            event.meta_email_content = metadata['emailContent']
+        if 'previousStatus' in metadata:
+            event.meta_previous_status = metadata['previousStatus']
+        if 'newStatus' in metadata:
+            event.meta_new_status = metadata['newStatus']
+    
+    db.session.add(event)
+    db.session.commit()
+    
+    return jsonify({'message': 'Timeline event added successfully', 'event': event.to_dict()}), 201

@@ -22,9 +22,11 @@ class Agency(db.Model):
     id = db.Column(db.String(50), primary_key=True)
     name = db.Column(db.String(100), nullable=False)
     performance_score = db.Column(db.Float)
-    total_recovered = db.Column(db.Float)
+    active_outstanding_amount = db.Column(db.Float)
     email = db.Column(db.String(120))
     phone = db.Column(db.String(20))
+    summary = db.Column(db.String(600), nullable=True, default=None)
+    
     # Relationship with cases
     cases = db.relationship('Case', backref='agency', lazy=True)
 
@@ -33,7 +35,10 @@ class Agency(db.Model):
             'id': self.id,
             'name': self.name,
             'performanceScore': self.performance_score,
-            'totalRecovered': self.total_recovered,
+            'activeOutstandingAmount': self.active_outstanding_amount,
+            'email': self.email,
+            'phone': self.phone,
+            'summary': self.summary,
             'activeCases': len([c for c in self.cases if c.status not in ['resolved', 'legal']])
         }
 

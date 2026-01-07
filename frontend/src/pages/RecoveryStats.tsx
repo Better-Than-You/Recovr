@@ -3,6 +3,7 @@ import { Badge } from '@/components/ui/badge'
 import { mockCases } from '@/data/mockData'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import { TrendingUp, Target, Clock } from 'lucide-react'
+import { act } from 'react'
 
 export function RecoveryStats() {
   const myCases = mockCases.filter(c => c.assignedAgency === 'Premier Recovery Solutions')
@@ -16,8 +17,8 @@ export function RecoveryStats() {
   }
 
   const totalTarget = 2500000
-  const totalRecovered = 2100000
-  const recoveryRate = (totalRecovered / totalTarget) * 100
+  const activeOutstandingAmount = 2100000
+  const recoveryRate = (activeOutstandingAmount / totalTarget) * 100
 
   const agingDistribution = [
     { range: '0-30', count: myCases.filter(c => c.agingDays <= 30).length },
@@ -55,13 +56,13 @@ export function RecoveryStats() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-slate-500">
-              Total Recovered
+              Active Outstanding
             </CardTitle>
             <TrendingUp className="h-4 w-4 text-green-500" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-slate-900">
-              {formatCurrency(totalRecovered)}
+              {formatCurrency(activeOutstandingAmount)}
             </div>
             <p className="text-xs text-green-600 mt-1">
               +12.5% from last month
@@ -192,7 +193,7 @@ export function RecoveryStats() {
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm font-medium text-slate-700">Quarterly Target</span>
                 <span className="text-sm font-semibold text-slate-900">
-                  {formatCurrency(totalRecovered)} / {formatCurrency(totalTarget)}
+                  {formatCurrency(activeOutstandingAmount)} / {formatCurrency(totalTarget)}
                 </span>
               </div>
               <div className="h-4 bg-slate-100 rounded-full overflow-hidden">
@@ -206,7 +207,7 @@ export function RecoveryStats() {
                   {recoveryRate.toFixed(1)}% Complete
                 </Badge>
                 <span className="text-xs text-slate-500">
-                  {formatCurrency(totalTarget - totalRecovered)} remaining
+                  {formatCurrency(totalTarget - activeOutstandingAmount)} remaining
                 </span>
               </div>
             </div>
