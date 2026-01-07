@@ -1,0 +1,148 @@
+from flask_sqlalchemy import SQLAlchemy
+from datetime import datetime
+
+db = SQLAlchemy()
+
+class User(db.Model):
+    id = db.Column(db.String(50), primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    email = db.Column(db.String(120), unique=True, nullable=False)
+    role = db.Column(db.String(20), nullable=False) # 'fedex', 'dca', 'admin'
+    password_hash = db.Column(db.String(128)) # In a real app, hash this!
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'email': self.email,
+            'role': self.role
+        }
+
+class Agency(db.Model):
+    id = db.Column(db.String(50), primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    performance_score = db.Column(db.Float)
+    total_recovered = db.Column(db.Float)
+    email = db.Column(db.String(120))
+    phone = db.Column(db.String(20))
+    # Relationship with cases
+    cases = db.relationship('Case', backref='agency', lazy=True)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'performanceScore': self.performance_score,
+            'totalRecovered': self.total_recovered,
+            'activeCases': len([c for c in self.cases if c.status not in ['resolved', 'legal']])
+        }
+
+class Customer(db.Model):
+    id = db.Column(db.String(50), primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    email = db.Column(db.String(120), nullable=False)
+    phone = db.Column(db.String(20))
+    address = db.Column(db.String(200))
+    city = db.Column(db.String(100))
+    state = db.Column(db.String(50))
+    zip_code = db.Column(db.String(20))
+    
+    cases = db.relationship('Case', backref='customer_rel', lazy=True)
+
+    def to_dict(self):
+        total_owed = sum([c.amount for c in self.cases if c.status not in ['resolved']])
+        return {
+            'id': self.id,
+            'name': self.name,
+            'email': self.email,
+            'phone': self.phone,
+            'address': self.address,
+            'city': self.city,
+            'state': self.state,
+            'zip': self.zip_code,
+            'totalOwed': total_owed,
+            'activeCases': len([c for c in self.cases if c.status not in ['resolved']])
+        }
+
+class Case(db.Model):
+    id = db.Column(db.String(50), primary_key=True) # caseId
+    customer_name = db.Column(db.String(100), nullable=False) # Redundant but keeps frontend structure
+    customer_id = db.Column(db.String(50), db.ForeignKey('customer.id'), nullable=True) # Link to actual customer
+    amount = db.Column(db.Float, nullable=False)
+    aging_days = db.Column(db.Integer)
+    recovery_probability = db.Column(db.Float)
+    assigned_agency_id = db.Column(db.String(50), db.ForeignKey('agency.id'), nullable=True)
+    status = db.Column(db.String(20), default='pending') # pending, assigned, in_progress, resolved, legal
+    account_number = db.Column(db.String(50))
+    due_date = db.Column(db.String(20))
+    last_contact = db.Column(db.String(20))
+    created_at = db.Column(db.String(30))
+    auto_assign_after_hours = db.Column(db.Integer, nullable=True)
+
+    timeline_events = db.relationship('TimelineEvent', backref='case', lazy=True, cascade="all, delete-orphan")
+
+    def to_dict(self):
+        return {
+            'caseId': self.id,
+            'customerName': self.customer_name,
+            'amount': self.amount,
+            'agingDays': self.aging_days,
+            'recoveryProbability': self.recovery_probability,
+            'assignedAgency': self.agency.name if self.agency else None,
+            'assignedAgencyId': self.assigned_agency_id,
+            'status': self.status,
+            'accountNumber': self.account_number,
+            'dueDate': self.due_date,
+            'lastContact': self.last_contact,
+            'createdAt': self.created_at,
+            'autoAssignAfterHours': self.auto_assign_after_hours,
+            'customerId': self.customer_id
+        }
+
+class TimelineEvent(db.Model):
+    id = db.Column(db.String(50), primary_key=True)
+    case_id = db.Column(db.String(50), db.ForeignKey('case.id'), nullable=False)
+    timestamp = db.Column(db.String(30))
+    actor = db.Column(db.String(20)) # fedex, dca, customer
+    event_type = db.Column(db.String(50)) # email, status_change, payment, call, legal_notice
+    title = db.Column(db.String(100))
+    description = db.Column(db.Text)
+    
+    # Metadata fields (stored as individual columns for simplicity in sqlite, could be JSON)
+    meta_amount = db.Column(db.Float, nullable=True)
+    meta_email_subject = db.Column(db.String(200), nullable=True)
+    meta_previous_status = db.Column(db.String(50), nullable=True)
+    meta_new_status = db.Column(db.String(50), nullable=True)
+
+    def to_dict(self):
+        metadata = {}
+        if self.meta_amount: metadata['amount'] = self.meta_amount
+        if self.meta_email_subject: metadata['emailSubject'] = self.meta_email_subject
+        if self.meta_previous_status: metadata['previousStatus'] = self.meta_previous_status
+        if self.meta_new_status: metadata['newStatus'] = self.meta_new_status
+
+        return {
+            'id': self.id,
+            'timestamp': self.timestamp,
+            'actor': self.actor,
+            'eventType': self.event_type,
+            'title': self.title,
+            'description': self.description,
+            'metadata': metadata if metadata else None
+        }
+
+class AuditLog(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    user_id = db.Column(db.String(50))
+    action = db.Column(db.String(100))
+    details = db.Column(db.String(200))
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'timestamp': self.timestamp.isoformat(),
+            'userId': self.user_id,
+            'action': self.action,
+            'details': self.details
+        }
