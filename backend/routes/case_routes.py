@@ -196,11 +196,14 @@ def add_timeline_event(case_id):
     if data['eventType'] not in valid_event_types:
         return jsonify({'error': f'Invalid event type. Must be one of: {valid_event_types}'}), 400
     
+    # Use provided timestamp or default to current time
+    timestamp = data.get('timestamp', datetime.utcnow().isoformat() + 'Z')
+    
     # Create timeline event
     event = TimelineEvent(
         id=f"evt-{uuid.uuid4().hex[:8]}",
         case_id=case_id,
-        timestamp=datetime.utcnow().isoformat() + 'Z',
+        timestamp=timestamp,
         actor=data['actor'],
         event_type=data['eventType'],
         title=data['title'],

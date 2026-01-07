@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { mockCases, mockTimelineData } from '@/data/mockData'
-import { ArrowLeft, Mail, Phone, FileText, AlertCircle, Scale, User, ChevronDown, ChevronUp, ChevronRight, ChevronLeft, Building2, Calendar, DollarSign, ArrowUp, ArrowDown, MoveRight, Repeat } from 'lucide-react'
+import { ArrowLeft, Mail, Phone, FileText, AlertCircle, Scale, User, ChevronDown, ChevronUp, ChevronRight, ChevronLeft, Building2, Calendar, DollarSign, ArrowUp, ArrowDown, MoveRight, Repeat, ArrowRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useState } from 'react'
 import { ConfirmationModal } from '@/components/ui/confirmation-modal'
@@ -35,10 +35,13 @@ export function CaseDetail() {
   const [isAddEventModalOpen, setIsAddEventModalOpen] = useState(false)
   const [isSubmittingEvent, setIsSubmittingEvent] = useState(false)
   const [eventForm, setEventForm] = useState({
-    eventType: 'email',
+    eventType: 'call',
     title: '',
     actor: 'fedex',
-    description: ''
+    recipient: 'customer',
+    description: '',
+    amount: '',
+    timestamp: new Date().toISOString().slice(0, 16)
   })
   
   const caseData = mockCases.find(c => c.caseId === caseId)
@@ -84,25 +87,58 @@ export function CaseDetail() {
       return
     }
     
+    // Validate timestamp
+    if (!eventForm.timestamp) {
+      showToast('Please select a date and time', 'error')
+      return
+    }
+    
+    // Validate payment amount
+    if (eventForm.eventType === 'payment') {
+      if (!eventForm.amount || parseFloat(eventForm.amount) <= 0) {
+        showToast('Please enter a valid payment amount', 'error')
+        return
+      }
+    }
+    
+    // Validate legal notice description
+    if (eventForm.eventType === 'legal_notice' && !eventForm.description.trim()) {
+      showToast('Please enter notice details', 'error')
+      return
+    }
+    
     setIsSubmittingEvent(true)
     
     try {
-      await caseService.addTimelineEvent(caseId, {
+      const eventData: any = {
         eventType: eventForm.eventType,
         title: eventForm.title,
         actor: eventForm.actor as 'fedex' | 'dca' | 'customer',
-        description: eventForm.description
-      })
+        description: eventForm.description,
+        timestamp: new Date(eventForm.timestamp).toISOString()
+      }
+      
+      // Add metadata for payment events
+      if (eventForm.eventType === 'payment' && eventForm.amount) {
+        eventData.metadata = {
+          amount: parseFloat(eventForm.amount)
+        }
+      }
+      
+      await caseService.addTimelineEvent(caseId, eventData)
       
       showToast('Timeline event added successfully', 'success')
       setIsAddEventModalOpen(false)
       
       // Reset form
       setEventForm({
-        eventType: 'email',
+        eventType: 'call',
         title: '',
         actor: 'fedex',
-        description: ''
+        recipient: 'customer',
+        description: '',
+        amount: '',
+        timestamp: new Date().toISOString().slice(0, 16)
       })
       
       // Reload the page to show the new event
@@ -576,10 +612,13 @@ export function CaseDetail() {
         onClose={() => {
           setIsAddEventModalOpen(false)
           setEventForm({
-            eventType: 'email',
+            eventType: 'call',
             title: '',
             actor: 'fedex',
-            description: ''
+            recipient: 'customer',
+            description: '',
+            amount: '',
+            timestamp: new Date().toISOString().slice(0, 16)
           })
         }}
         title="Add Timeline Event"
@@ -593,56 +632,164 @@ export function CaseDetail() {
             <select
               className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               value={eventForm.eventType}
-              onChange={(e) => setEventForm({ ...eventForm, eventType: e.target.value })}
+              onChange={(e) => setEventForm({ ...eventForm, eventType: e.target.value, title: '', description: '', amount: '' })}
             >
-              <option value="email">Email</option>
               <option value="call">Call</option>
-              <option value="status_change">Status Change</option>
               <option value="payment">Payment</option>
               <option value="legal_notice">Legal Notice</option>
             </select>
           </div>
 
+          {/* Timestamp field */}
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-2">
-              Actor
-            </label>
-            <select
-              className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              value={eventForm.actor}
-              onChange={(e) => setEventForm({ ...eventForm, actor: e.target.value })}
-            >
-              <option value="fedex">FedEx</option>
-              <option value="dca">DCA</option>
-              <option value="customer">Customer</option>
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">
-              Title *
+              Date & Time *
             </label>
             <input
-              type="text"
+              type="datetime-local"
               className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Enter event title"
-              value={eventForm.title}
-              onChange={(e) => setEventForm({ ...eventForm, title: e.target.value })}
+              value={eventForm.timestamp}
+              onChange={(e) => setEventForm({ ...eventForm, timestamp: e.target.value })}
             />
           </div>
 
-          <div>
+          {/* From/To Selector with Swap */}
+          {eventForm.eventType == 'call' && (
+            <div>
             <label className="block text-sm font-medium text-slate-700 mb-2">
-              Description
+              Communication Flow
             </label>
-            <textarea
-              className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Enter event description (optional)"
-              rows={4}
-              value={eventForm.description}
-              onChange={(e) => setEventForm({ ...eventForm, description: e.target.value })}
-            />
+            <div className="flex items-center gap-2">
+              <select
+                className="flex-1 px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                value={eventForm.actor}
+                onChange={(e) => setEventForm({ ...eventForm, actor: e.target.value })}
+              >
+                <option value="fedex">FedEx</option>
+                <option value="dca">DCA</option>
+                <option value="customer">Customer</option>
+              </select>
+              
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="shrink-0"
+                onClick={() => setEventForm({ 
+                  ...eventForm, 
+                  actor: eventForm.recipient, 
+                  recipient: eventForm.actor 
+                })}
+              >
+                <ArrowLeft className="h-4 w-4 mr-1" />
+                <ArrowRight className="h-4 w-4" />
+              </Button>
+              
+              <select
+                className="flex-1 px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                value={eventForm.recipient}
+                onChange={(e) => setEventForm({ ...eventForm, recipient: e.target.value })}
+              >
+                <option value="fedex">FedEx</option>
+                <option value="dca">DCA</option>
+                <option value="customer">Customer</option>
+              </select>
+            </div>
+            <p className="text-xs text-slate-500 mt-1">From → To</p>
           </div>
+          )}
+
+          {/* Call specific fields */}
+          {eventForm.eventType === 'call' && (
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                Call Summary *
+              </label>
+              <input
+                type="text"
+                className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="e.g., Follow-up call with customer"
+                value={eventForm.title}
+                onChange={(e) => setEventForm({ ...eventForm, title: e.target.value })}
+              />
+            </div>
+          )}
+
+          {/* Payment specific fields */}
+          {eventForm.eventType === 'payment' && (
+            <>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Payment Amount *
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="0.00"
+                  value={eventForm.amount}
+                  onChange={(e) => setEventForm({ ...eventForm, amount: e.target.value })}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Payment Reference *
+                </label>
+                <input
+                  type="text"
+                  className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="e.g., Check #1234, Wire Transfer"
+                  value={eventForm.title}
+                  onChange={(e) => setEventForm({ ...eventForm, title: e.target.value })}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Additional Notes
+                </label>
+                <textarea
+                  className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Enter any additional payment details"
+                  rows={3}
+                  value={eventForm.description}
+                  onChange={(e) => setEventForm({ ...eventForm, description: e.target.value })}
+                />
+              </div>
+            </>
+          )}
+
+          {/* Legal Notice specific fields */}
+          {eventForm.eventType === 'legal_notice' && (
+            <>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Notice Type *
+                </label>
+                <input
+                  type="text"
+                  className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="e.g., Demand Letter, Court Filing"
+                  value={eventForm.title}
+                  onChange={(e) => setEventForm({ ...eventForm, title: e.target.value })}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Notice Details *
+                </label>
+                <textarea
+                  className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Enter details about the legal notice"
+                  rows={4}
+                  value={eventForm.description}
+                  onChange={(e) => setEventForm({ ...eventForm, description: e.target.value })}
+                />
+              </div>
+            </>
+          )}
 
           <div className="flex gap-3 pt-4">
             <Button
@@ -651,10 +798,13 @@ export function CaseDetail() {
               onClick={() => {
                 setIsAddEventModalOpen(false)
                 setEventForm({
-                  eventType: 'email',
+                  eventType: 'call',
                   title: '',
                   actor: 'fedex',
-                  description: ''
+                  recipient: 'customer',
+                  description: '',
+                  amount: '',
+                  timestamp: new Date().toISOString().slice(0, 16)
                 })
               }}
               disabled={isSubmittingEvent}
