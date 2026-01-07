@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "autoprefixer": "^10.4.23",
+    "axios": "^1.13.2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^0.562.0",
@@ -20,7 +21,8 @@
     "react-router-dom": "^7.11.0",
     "recharts": "^3.6.0",
     "tailwind-merge": "^3.4.0",
-    "tailwindcss": "^4.1.18"
+    "tailwindcss": "^4.1.18",
+    "zustand": "^5.0.9"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
