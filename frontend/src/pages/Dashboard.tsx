@@ -1,10 +1,10 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { ConfirmationModal } from '@/components/ui/confirmation-modal'
-import { DollarSign, TrendingUp, Users, Clock, Radio, Zap, AlertCircle } from 'lucide-react'
+import { DollarSign, TrendingUp, Users, Clock, Radio, Zap, AlertCircle, Upload, FileSpreadsheet } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts'
 import { dashboardService, type DashboardStats } from '@/services/dashboardService'
 import { caseService, type Case } from '@/services/caseService'
@@ -28,6 +28,8 @@ export function Dashboard() {
   const [cases, setCases] = useState<Case[]>([])
   const [agencies, setAgencies] = useState<Agency[]>([])
   const [recoveryTrendData, setRecoveryTrendData] = useState<any[]>([])
+  const [isUploading, setIsUploading] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
   
   // Fetch dashboard data
   useEffect(() => {
@@ -75,7 +77,7 @@ export function Dashboard() {
   }, [])
 
   // Get new unassigned cases
-  const newCases = cases.filter(c => c.status === 'pending' && !c.assigned_agency_id)
+  // const newCases = cases.filter(c => c.status === 'pending' && !c.assigned_agency_id)
   
   // Calculate hours since case creation
   const getHoursSinceCreation = (createdAt: string) => {
@@ -99,35 +101,85 @@ export function Dashboard() {
   }
   
   // Auto-assign cases past their individual thresholds
-  const handleAutoAssignAll = async () => {
-    try {
-      const casesToAssign = newCases.filter(c => {
-        const threshold = 24 // Default threshold
-        return getHoursSinceCreation(c.created_at) >= threshold
-      })
+  // const handleAutoAssignAll = async () => {
+  //   try {
+  //     const casesToAssign = newCases.filter(c => {
+  //       const threshold = 24 // Default threshold
+  //       return getHoursSinceCreation(c.created_at) >= threshold
+  //     })
       
-      // Assign each case to best agency (simplified)
-      for (const caseItem of casesToAssign) {
-        const bestAgency = agencies.sort((a, b) => 
-          (b.performance_score || 0) - (a.performance_score || 0)
-        )[0]
+  //     // Assign each case to best agency (simplified)
+  //     for (const caseItem of casesToAssign) {
+  //       const bestAgency = agencies.sort((a, b) => 
+  //         (b.performance_score || 0) - (a.performance_score || 0)
+  //       )[0]
         
-        if (bestAgency) {
-          await caseService.assignCase(caseItem.id, bestAgency.id)
-        }
-      }
+  //       if (bestAgency) {
+  //         await caseService.assignCase(caseItem.id, bestAgency.id)
+  //       }
+  //     }
       
-      showToast(`Successfully assigned ${casesToAssign.length} cases`, 'success')
-      setIsAutoAssignModalOpen(false)
-      fetchDashboardData() // Refresh data
+  //     showToast(`Successfully assigned ${casesToAssign.length} cases`, 'success')
+  //     setIsAutoAssignModalOpen(false)
+  //     fetchDashboardData() // Refresh data
+  //   } catch (error) {
+  //     console.error('Error auto-assigning cases:', error)
+  //     showToast('Failed to auto-assign cases', 'error')
+  //   }
+  // }
+  
+  // const handleManualAssign = (caseId: string) => {
+  //   navigate(`/case/${caseId}`)
+  // }
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    // Validate file type
+    const validTypes = [
+      'text/csv',
+      'application/vnd.ms-excel',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    ]
+    
+    if (!validTypes.includes(file.type) && !file.name.match(/\.(csv|xlsx|xls)$/i)) {
+      showToast('Please upload a valid CSV or Excel file', 'error')
+      return
+    }
+
+    setIsUploading(true)
+
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+
+      // TODO: Replace with actual API endpoint
+      // For now, we'll simulate the upload
+      await new Promise(resolve => setTimeout(resolve, 2000))
+      
+      // In a real implementation, you would call something like:
+      // await caseService.uploadCaseData(formData)
+      
+      showToast(`Successfully uploaded ${file.name}. Processing case data...`, 'success')
+      
+      // Refresh dashboard data
+      fetchDashboardData()
+      
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ''
+      }
     } catch (error) {
-      console.error('Error auto-assigning cases:', error)
-      showToast('Failed to auto-assign cases', 'error')
+      console.error('Error uploading file:', error)
+      showToast('Failed to upload file', 'error')
+    } finally {
+      setIsUploading(false)
     }
   }
-  
-  const handleManualAssign = (caseId: string) => {
-    navigate(`/case/${caseId}`)
+
+  const handleUploadClick = () => {
+    fileInputRef.current?.click()
   }
 
   const formatCurrency = (value: number) => {
@@ -167,7 +219,50 @@ export function Dashboard() {
         </div>
       </div>
 
-      {/* New Cases Section */}
+      {/* File Upload Section */}
+      <Card className="mb-8 border-dashed border-2 border-slate-300 bg-slate-50/50">
+        <CardContent className="pt-6">
+          <div className="flex items-center gap-4">
+            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-blue-100">
+              <FileSpreadsheet className="h-6 w-6 text-blue-600" />
+            </div>
+            <div className="flex-1">
+              <h3 className="text-sm font-semibold text-slate-900">Import Case Data</h3>
+              <p className="text-xs text-slate-600 mt-0.5">
+                Upload CSV or Excel file to import existing case data into the system
+              </p>
+            </div>
+            <div>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".csv,.xlsx,.xls,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv"
+                onChange={handleFileUpload}
+                className="hidden"
+              />
+              <Button
+                onClick={handleUploadClick}
+                disabled={isUploading}
+                className="gap-2"
+              >
+                {isUploading ? (
+                  <>
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
+                    <span>Uploading...</span>
+                  </>
+                ) : (
+                  <>
+                    <Upload className="h-4 w-4" />
+                    <span>Upload File</span>
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* New Cases Section
       {newCases.length > 0 && (
         <Card className="mb-8">
           <CardHeader>
@@ -261,7 +356,7 @@ export function Dashboard() {
             </div>
           </CardContent>
         </Card>
-      )}
+      )} */}
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -444,7 +539,7 @@ export function Dashboard() {
                 </div>
                 <div className="text-right">
                   <p className="text-sm font-semibold text-slate-900">
-                    {formatCurrency(agency.recovered_amount || 0)}
+                    {formatCurrency(agency.recoveredAmount || 0)}
                   </p>
                   <Badge 
                     variant={
@@ -464,7 +559,7 @@ export function Dashboard() {
       </Card>
 
       {/* Auto Assign Confirmation Modal */}
-      <ConfirmationModal
+      {/* <ConfirmationModal
         isOpen={isAutoAssignModalOpen}
         onClose={() => setIsAutoAssignModalOpen(false)}
         onConfirm={handleAutoAssignAll}
@@ -476,7 +571,7 @@ export function Dashboard() {
         confirmText="Auto-Assign"
         cancelText="Cancel"
         type="info"
-      />
+      /> */}
     </div>
   )
 }
