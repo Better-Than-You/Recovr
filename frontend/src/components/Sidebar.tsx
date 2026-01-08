@@ -1,15 +1,17 @@
 import { Link, useLocation } from 'react-router-dom'
-import { 
-  LayoutDashboard, 
-  Users, 
-  TrendingUp, 
-  FileText, 
-  Briefcase, 
+import {
+  LayoutDashboard,
+  Users,
+  TrendingUp,
+  FileText,
+  Briefcase,
   Clock,
   BarChart3,
   ChevronRight,
   Menu,
-  X
+  X,
+  UserPlus,
+  Building2
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from './ui/button'
@@ -38,9 +40,21 @@ const navItems: NavItem[] = [
     roles: ['fedex']
   },
   {
+    title: 'Add Customer',
+    href: '/add-user',
+    icon: UserPlus,
+    roles: ['fedex']
+  },
+  {
     title: 'Agencies',
     href: '/agencies',
     icon: Briefcase,
+    roles: ['fedex']
+  },
+  {
+    title: 'Add DCA',
+    href: '/add-dca',
+    icon: Building2,
     roles: ['fedex']
   },
   {
@@ -89,8 +103,8 @@ interface SidebarProps {
 export function Sidebar({ currentRole, onRoleChange }: SidebarProps) {
   const location = useLocation()
   const [collapsed, setCollapsed] = useState(false)
-  
-  const filteredNavItems = navItems.filter(item => 
+
+  const filteredNavItems = navItems.filter(item =>
     item.roles.includes(currentRole)
   )
 
@@ -148,7 +162,7 @@ export function Sidebar({ currentRole, onRoleChange }: SidebarProps) {
           {filteredNavItems.map((item) => {
             const Icon = item.icon
             const isActive = location.pathname === item.href
-            
+
             return (
               <Link
                 key={item.href}
@@ -169,7 +183,7 @@ export function Sidebar({ currentRole, onRoleChange }: SidebarProps) {
                     {isActive && <ChevronRight className="h-4 w-4" />}
                   </>
                 )}
-                
+
                 {/* Tooltip for collapsed state */}
                 {collapsed && (
                   <div className="absolute left-full ml-2 px-2 py-1 bg-slate-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50">
