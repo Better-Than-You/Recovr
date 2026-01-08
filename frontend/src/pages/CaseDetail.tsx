@@ -338,12 +338,14 @@ export function CaseDetail() {
                                         <div className="flex items-center gap-2">
                                           <Badge variant="outline" className="text-xs">
                                             <User className="h-3 w-3 mr-1" />
-                                            {event.from}
+                                            {/*  harcoding this */}
+                                            customer
                                           </Badge>
                                           <ArrowRight className="h-3 w-3 text-slate-400" />
                                           <Badge variant="outline" className="text-xs">
                                             <User className="h-3 w-3 mr-1" />
-                                            {event.to}
+                                            {/*  harcoding this */}
+                                            fedex
                                           </Badge>
                                         </div>
                                       )}

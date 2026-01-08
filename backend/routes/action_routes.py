@@ -162,7 +162,7 @@ def print_json():
             from_=data.get('from', 'unknown'),
             to_=data.get('to', 'unknown'),
             event_type='email',
-            title="Email received from customer",
+            title="Email Received From Customer",
             description="No description provided",
             meta_amount=data.get('amount', None),
             meta_email_subject=data.get('content').get('subject'),
