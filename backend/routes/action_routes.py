@@ -1,4 +1,4 @@
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, json, jsonify, request
 from models import db, Case, Customer, TimelineEvent
 import os
 import csv
@@ -106,28 +106,82 @@ def update_timeline():
 
 @actions_bp.route('/print-json', methods=['POST'])
 def print_json():
+    def sanitize_json(input_str: str) -> dict:
+        """
+        Sanitize and parse JSON input string, removing potentially harmful content.
+
+        This function is designed to clean JSON input received from n8n workflows by:
+        1. Parsing the JSON string into a Python dictionary
+        2. Removing potentially harmful HTML script tags from string values within the 'content' field
+
+        Args:
+            input_str (str): A JSON-formatted string that needs to be sanitized and parsed.
+
+        Returns:
+            dict: A dictionary containing the sanitized JSON data. Returns an empty dictionary 
+                if the input string is not valid JSON.
+
+        Raises:
+            No exceptions are raised. JSON parsing errors are caught and handled by returning 
+            an empty dictionary.
+
+        Example:
+            >>> json_str = '{"content": {"message": "<script>alert(1)</script>Hello"}}'
+            >>> result = sanitize_json(json_str)
+            >>> print(result)
+            {'content': {'message': 'Hello'}}
+
+        Note:
+            - This is a basic sanitization approach that only removes <script> tags
+            - For production use, consider using more comprehensive sanitization libraries
+            - Only sanitizes string values within the 'content' dictionary key
+            - Non-string values in 'content' are left unchanged
+        """
+        import json
+        try:
+            data = json.loads(input_str)
+            # Basic sanitization: remove any script tags or potentially harmful content
+            if 'content' in data and isinstance(data['content'], dict):
+                for key in data['content']:
+                    if isinstance(data['content'][key], str):
+                        data['content'][key] = data['content'][key].replace('<script>', '').replace('</script>', '')
+            return data
+        except json.JSONDecodeError:
+            return {}
+
     try:
         data = request.get_json()
-        print("Received JSON Data:")
-        # Save to output.json
-        output_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'output.json')
-        with open(output_path, 'w') as f:
-            json.dump(data, f, indent=2)
-        invoice_id = data.get('invoiceId')
-        from_value = data.get('from')
-        to_value = data.get('to') if data.get('to') else 'fedex'
-        content = data.get('content')
+        content = data.get('content', '{}')
+        data = sanitize_json(content)
         
-        email_subject = content.get('subject') if content else 'No Subject'
-        email_body = content.get('body') if content else 'No Body'
+        # create timeline event
+        event = TimelineEvent(
+            id=str(uuid.uuid4()),
+            case_id=data.get('invoiceId', 'unknown'),
+            timestamp=data.get('timestamp', datetime.now().isoformat()),
+            from_=data.get('from', 'unknown'),
+            to_=data.get('to', 'unknown'),
+            event_type='email',
+            title="Email received from customer",
+            description="No description provided",
+            meta_amount=data.get('amount', None),
+            meta_email_subject=data.get('content').get('subject'),
+            meta_email_content=data.get('content').get('body'),
+            meta_previous_status=data.get('previousStatus', None),
+            meta_new_status=data.get('newStatus', None)
+        )
         
-        print(f"Invoice ID: {invoice_id}")
-        print(f"From: {from_value}")
-        print(f"To: {to_value}")
-        print(f"Email Subject: {email_subject}")
-        print(f"Email Body: {email_body}")
+        # CHANGE THIS WHEN YOU SERIOUSLY WANT TO ADD TIMELINE THROUGH EMAIL HOOK
+        add_event_toggle = True
+        if add_event_toggle:
+            try:
+                db.session.add(event)
+                db.session.commit()
+                return jsonify({'message': 'Timeline event created successfully', 'event': event.to_dict()}), 201
+            except Exception as e:
+                db.session.rollback()
+                return jsonify({'error': str(e)}), 500
         
-        return jsonify({"message": "JSON received and printed"}), 200
     except Exception as e:
         print(f"Error printing JSON: {e}")
         return jsonify({"error": "Failed to process JSON"}), 400
