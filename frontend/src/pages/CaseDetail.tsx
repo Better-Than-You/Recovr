@@ -2,7 +2,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { ArrowLeft, Mail, Phone, FileText, AlertCircle, Scale, User, ChevronDown, ChevronUp, ChevronRight, ChevronLeft, Building2, Calendar, DollarSign, ArrowUp, ArrowDown, MoveRight, Repeat, ArrowRight, Loader2 } from 'lucide-react'
+import { ArrowLeft, Mail, Phone, FileText, Scale, User, ChevronDown, ChevronUp, ChevronRight, ChevronLeft, Building2, Calendar, DollarSign, ArrowUp, ArrowDown, Repeat, ArrowRight, Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useState, useEffect } from 'react'
 import { ConfirmationModal } from '@/components/ui/confirmation-modal'
@@ -10,7 +10,7 @@ import { Modal } from '@/components/ui/modal'
 import { useUIStore, useAuthStore } from '@/stores'
 import { caseService, type Case, type TimelineEvent } from '@/services/caseService'
 
-const eventIcons = {
+const eventIcons: Record<string, React.ComponentType<any>> = {
   email: Mail,
   call: Phone,
   status_change: FileText,
@@ -398,7 +398,7 @@ export function CaseDetail() {
                                     <div className="bg-slate-50 p-3 rounded">
                                       <p className="text-xs text-slate-500 font-medium mb-1">Message</p>
                                       <p className="text-sm text-slate-700 leading-relaxed">
-                                        {event.description}
+                                        {event.metadata?.emailContent || 'No content available.'}
                                       </p>
                                     </div>
                                     <div className="flex items-center gap-2 pt-2">
@@ -520,11 +520,11 @@ export function CaseDetail() {
                       <p className="text-xs font-medium text-slate-500">Due Date</p>
                     </div>
                     <p className="text-sm font-medium text-slate-900 pl-6">
-                      {new Date(caseData.dueDate).toLocaleDateString('en-US', {
+                      {caseData.dueDate ? new Date(caseData.dueDate).toLocaleDateString('en-US', {
                         month: 'long',
                         day: 'numeric',
                         year: 'numeric'
-                      })}
+                      }) : 'N/A'}
                     </p>
                   </div>
 
@@ -534,11 +534,11 @@ export function CaseDetail() {
                       <p className="text-xs font-medium text-slate-500">Last Contact</p>
                     </div>
                     <p className="text-sm font-medium text-slate-900 pl-6">
-                      {new Date(caseData.lastContact).toLocaleDateString('en-US', {
+                      {caseData.lastContact ? new Date(caseData.lastContact).toLocaleDateString('en-US', {
                         month: 'long',
                         day: 'numeric',
                         year: 'numeric'
-                      })}
+                      }) : 'N/A'}
                     </p>
                   </div>
 

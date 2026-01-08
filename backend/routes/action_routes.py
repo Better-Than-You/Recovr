@@ -151,7 +151,7 @@ def print_json():
 
     try:
         data = request.get_json()
-        content = data.get('content', '{}')
+        content = data['choices'][0]['message']['content']
         data = sanitize_json(content)
         
         # create timeline event
