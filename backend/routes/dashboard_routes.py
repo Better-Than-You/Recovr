@@ -12,7 +12,7 @@ def get_dashboard_stats():
     resolved_cases = Case.query.filter_by(status='resolved').count()
     
     total_debt = db.session.query(func.sum(Case.invoice_amount)).scalar() or 0
-    recovered_amount = 0 # In a real system, sum payment events
+    recovered_amount = db.session.query(func.sum(Case.recovered_amount)).scalar() or 0
     
     return jsonify({
         'totalCases': total_cases,

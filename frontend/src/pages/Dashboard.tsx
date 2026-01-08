@@ -193,7 +193,7 @@ export function Dashboard() {
       style: 'currency',
       currency: 'USD',
       minimumFractionDigits: 0
-    }).format(value)
+    }).format(Math.round(value))
   }
 
   if (initialLoading) {
@@ -395,7 +395,7 @@ export function Dashboard() {
               {(stats?.recoveryRate || 0).toFixed(0)}%
             </div>
             <p className="text-xs text-green-600 mt-1">
-              ${formatCurrency(stats?.recoveredAmount || 0)} recovered
+              {formatCurrency((stats?.recoveredAmount|| 0) / 1000) }k / {formatCurrency((stats?.totalDebt || 0) / 1000)}k recovered
             </p>
           </CardContent>
         </Card>
@@ -412,7 +412,7 @@ export function Dashboard() {
               {agencies.length}
             </div>
             <p className="text-xs text-slate-500 mt-1">
-              Managing {cases.filter(c => c.assigned_agency_id).length} assigned cases
+              Managing {cases.filter(c => c.assignedAgency).length} assigned cases
             </p>
           </CardContent>
         </Card>
@@ -454,7 +454,7 @@ export function Dashboard() {
                 <YAxis 
                   stroke="#64748b"
                   fontSize={12}
-                  tickFormatter={(value) => `$${value / 1000}k`}
+                  tickFormatter={(value) => `${value / 1000}k`}
                 />
                 <Tooltip 
                   formatter={(value: number | undefined) => value ? formatCurrency(value) : ''}
@@ -502,7 +502,7 @@ export function Dashboard() {
                 <YAxis 
                   stroke="#64748b"
                   fontSize={12}
-                  tickFormatter={(value) => `$${value / 1000}k`}
+                  tickFormatter={(value) => `${value / 1000}k`}
                 />
                 <Tooltip 
                   formatter={(value: number | undefined) => value ? formatCurrency(value) : ''}
