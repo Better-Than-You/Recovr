@@ -3,18 +3,19 @@ import api from './api';
 // Types
 export interface Case {
   id: string;
-  customer_name: string;
+  customerName: string;
+  customerId: string;
   amount: number;
-  aging_days: number;
-  recovery_probability: number;
+  agingDays: number;
+  recoveredAmount: number;
+  recoveryProbability: number;
+  invoiceAmount: number;
   status: string;
-  assigned_agency_id?: string;
+  assignedAgency_id?: string;
+  assignedAgencyReason?: string;
   customer_id?: string;
   created_at: string;
   assignedAgency?: string;
-  agingDays?: number;
-  recoveryProbability?: number;
-  customerName?: string;
   caseId?: string;
 }
 
@@ -49,8 +50,9 @@ export const caseService = {
    */
   async getCases(params: CaseQueryParams = {}): Promise<CasesResponse> {
     const response = await api.get('/cases', { params });
+    console.log('Fetched cases:', response.data);
     return response.data;
-  },
+},
 
   /**
    * Get a single case by ID

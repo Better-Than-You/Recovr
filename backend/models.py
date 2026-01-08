@@ -92,10 +92,11 @@ class Case(db.Model):
 
     def to_dict(self):
         return {
-            'caseId': self.id,
+            'id': self.id,
+            'caseId': self.id, # for frontend consistency
             'customerName': self.customer_name,
-            'invoice_amount': self.invoice_amount,
-            'recovered_amount': self.recovered_amount,
+            'invoiceAmount': self.invoice_amount,
+            'recoveredAmount': self.recovered_amount,
             'agingDays': self.aging_days,
             'recoveryProbability': self.recovery_probability,
             'assignedAgency': self.agency.name if self.agency else None,
