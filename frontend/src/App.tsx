@@ -15,6 +15,8 @@ import { AgencyDetail } from './pages/AgencyDetail'
 import { Customers } from './pages/Customers'
 import { CustomerDetail } from './pages/CustomerDetail'
 import { Unauthorized } from './pages/Unauthorized'
+import { AddUser } from './pages/AddUser'
+import { AddAgency } from './pages/AddAgency'
 import { Toast } from './components/Toast'
 
 // Route guard component for FedEx-only routes
@@ -42,7 +44,7 @@ function AgencyRoute({ children }: { children: React.ReactNode }) {
 
 function ProtectedRoutes() {
   const { isAuthenticated, user } = useAuthStore()
-  
+
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />
   }
@@ -78,10 +80,26 @@ function ProtectedRoutes() {
           } 
         />
         <Route 
+          path="/add-dca" 
+          element={
+            <FedExRoute>
+              <AddAgency />
+            </FedExRoute>
+          } 
+        />
+        <Route 
           path="/agency/:agencyId" 
           element={
             <FedExRoute>
               <AgencyDetail />
+            </FedExRoute>
+          } 
+        />
+        <Route 
+          path="/add-user" 
+          element={
+            <FedExRoute>
+              <AddUser />
             </FedExRoute>
           } 
         />

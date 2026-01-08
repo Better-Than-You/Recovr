@@ -1,15 +1,17 @@
 import { Link, useLocation } from 'react-router-dom'
-import { 
-  LayoutDashboard, 
-  Users, 
-  TrendingUp, 
-  FileText, 
-  Briefcase, 
+import {
+  LayoutDashboard,
+  Users,
+  TrendingUp,
+  FileText,
+  Briefcase,
   Clock,
   BarChart3,
   ChevronRight,
   Menu,
-  X
+  X,
+  UserPlus,
+  Building2
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from './ui/button'
@@ -39,9 +41,21 @@ const navItems: NavItem[] = [
     roles: ['fedex']
   },
   {
+    title: 'Add Customer',
+    href: '/add-user',
+    icon: UserPlus,
+    roles: ['fedex']
+  },
+  {
     title: 'Agencies',
     href: '/agencies',
     icon: Briefcase,
+    roles: ['fedex']
+  },
+  {
+    title: 'Add DCA',
+    href: '/add-dca',
+    icon: Building2,
     roles: ['fedex']
   },
   {
@@ -101,11 +115,11 @@ export function Sidebar({ currentRole }: SidebarProps) {
       collapsed ? "w-16" : "w-64"
     )}>
       {/* Header */}
-      <div className="border-b border-slate-200 p-4 flex items-center justify-between">
+      <div className="border-b border-slate-200 h-20 px-4 flex items-center justify-between">
         {!collapsed && (
           <div className="flex-1 min-w-0">
             <h1 className="text-3xl font-bold text-slate-900 truncate">Recovr</h1>
-            <p className="text-xs text-slate-500 mt-0.5">FedEx Case Study</p>
+            {/* <p className="text-xs text-slate-500 mt-0.5">kuch to text</p> */}
           </div>
         )}
         <Button
@@ -120,11 +134,11 @@ export function Sidebar({ currentRole }: SidebarProps) {
 
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto p-2">
-        <div className="space-y-1">
+        <div className="space-y-1 overflow-hidden">
           {filteredNavItems.map((item) => {
             const Icon = item.icon
             const isActive = location.pathname === item.href
-            
+
             return (
               <Link
                 key={item.href}
@@ -145,7 +159,7 @@ export function Sidebar({ currentRole }: SidebarProps) {
                     {isActive && <ChevronRight className="h-4 w-4" />}
                   </>
                 )}
-                
+
                 {/* Tooltip for collapsed state */}
                 {collapsed && (
                   <div className="absolute left-full ml-2 px-2 py-1 bg-slate-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50">
