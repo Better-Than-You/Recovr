@@ -1,0 +1,303 @@
+{
+  "name": "LM Studio Chat Completion",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "filters": {
+          "labelIds": [
+            "UNREAD"
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        0,
+        0
+      ],
+      "id": "661ab2f5-99f4-4c7b-a86e-03c30ad8cfef",
+      "name": "Gmail Trigger",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "1LXdlTkLEsztCuKy",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "messageId": "={{ $json.id }}",
+        "simple": false,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        208,
+        0
+      ],
+      "id": "b8485a7e-0a4e-4b1e-a9bb-8f6501e62781",
+      "name": "Get a message",
+      "webhookId": "4f743751-5173-4fe9-909e-f054e4e222e3",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "1LXdlTkLEsztCuKy",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://127.0.0.1:1234/v1/chat/completions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"local-model\",\n  \"messages\": [\n    {\n      \"role\": \"system\",\n      \"content\": \"You are a FedEx Debt Management Assistant.\\n\\nTASK:\\nAnalyze the email and determine whether it is related to debt, overdue accounts, collections, or payment disputes.\\n\\nReturn a JSON object ONLY, with NO explanations, NO markdown, and NO extra text.\\n\\nUse EXACTLY this JSON schema:\\n{\\n  \\\"is_debt_related\\\": boolean,\\n  \\\"customer_name\\\": string | null,\\n  \\\"account_number\\\": string | null,\\n  \\\"amount_mentioned\\\": string | null,\\n  \\\"category\\\": string | null\\n}\\n\\nCRITICAL EXTRACTION RULES:\\n\\nACCOUNT NUMBER RULES:\\n- Extract ONLY explicitly labeled account numbers (acct, acct#, account number)\\n- Ignore invoice, shipment, tracking, reference numbers\\n\\nOTHER RULES:\\n- If is_debt_related is false, all other fields must be null\\n- amount_mentioned must be numeric string only\\n- Output valid JSON only\"\n    },\n    {\n      \"role\": \"user\",\n      \"content\": {{\n        JSON.stringify(\n          \"Subject: \" + $json.subject +\n          \"\\nFrom: \" + $json.from.text +\n          \"\\n\\n\" + $json.text\n        )\n      }}\n    }\n  ],\n  \"temperature\": 0.3\n}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        416,
+        0
+      ],
+      "id": "577bd0a3-0296-48f0-bbdb-d4cd62ff7187",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -144,
+        240
+      ],
+      "id": "49ec2b69-c232-450a-b350-04c05dca9fac",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "fileSelector": "C:/Users/ssrin/.n8n-files/fedex_input.csv",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1.1,
+      "position": [
+        64,
+        240
+      ],
+      "id": "5e44956a-189d-4bb0-9ac4-47f222a819c5",
+      "name": "Read/Write Files from Disk"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [
+        320,
+        240
+      ],
+      "id": "eeffcaea-6527-43c6-aa4b-d3f789ba290d",
+      "name": "Extract from File"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://127.0.0.1:1234/v1/chat/completions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"local-model\",\n  \"messages\": [\n    {\n      \"role\": \"system\",\n      \"content\": \"You are the FedEx Allocation Engine. Your sole task is to assign debt cases to a DCA. You must return a flat JSON object. Do not provide explanations or extra text.\\n\\nDCAs:\\n- Titan B2B Recoveries: Large Corporate, debts > $5,000.\\n- Swift-Link Solutions: SMEs, debts between $500-$5,000.\\n- Empathy First Partners: Individuals / B2C, soft collections.\\n- Global Frontier Ltd: International (APAC and EMEA regions).\\n- Last-Resort Legal: High-Risk, debts > 120 days old or 'Poor' health.\\n\\nDECISION RULES (Apply in order):\\n1. If Days Overdue > 120 OR Health is 'Poor' -> 'Last-Resort Legal'.\\n2. If Type is 'Individual' -> 'Empathy First Partners'.\\n3. If Region is 'APAC' or 'EMEA' -> 'Global Frontier Ltd'.\\n4. If Type is 'Corporate' and Amount > 5000 -> 'Titan B2B Recoveries'.\\n5. Otherwise -> 'Swift-Link Solutions'.\\n\\nREQUIRED SCHEMA:\\n{ \\\"assigned_dca\\\": string, \\\"reasoning\\\": string }\"\n    },\n    {\n      \"role\": \"user\",\n      \"content\": \"Analyze this customer:\\nName: {{ $json.customer_name }}\\nType: {{ $json.account_type }}\\nHealth: {{ $json.historical_health }}\\nAmount: {{ $json.amount_due }}\\nRegion: {{ $json.region }}\\nDays Overdue: {{ Math.floor((new Date('2026-01-07') - new Date($json.due_date)) / (1000 * 60 * 60 * 24)) }}\\n\\nExample Output:\\n{ \\\"assigned_dca\\\": \\\"Swift-Link Solutions\\\", \\\"reasoning\\\": \\\"Corporate client with moderate debt under $5,000 in the US region.\\\" }\"\n    }\n  ],\n  \"temperature\": 0.1\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        784,
+        368
+      ],
+      "id": "7ab0fd36-3a8c-46db-9c9c-cf11f055d4b7",
+      "name": "HTTP Request1"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        576,
+        240
+      ],
+      "id": "8a85bda6-b605-4141-8e70-59ba7ff410ef",
+      "name": "Loop Over Items"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        784,
+        176
+      ],
+      "id": "2a2f1638-6488-4d23-9cd2-124bb7c28fb5",
+      "name": "Convert to File"
+    },
+    {
+      "parameters": {
+        "jsCode": "const aiResponse = JSON.parse($json.choices[0].message.content);\n\nreturn {\n  account_number: $node[\"Loop Over Items\"].json.account_number,\n  customer_name: $node[\"Loop Over Items\"].json.customer_name,\n  amount_due: $node[\"Loop Over Items\"].json.amount_due,\n  assigned_dca: aiResponse.assigned_dca,\n  reasoning: aiResponse.reasoning\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1024,
+        416
+      ],
+      "id": "583d5144-3d86-4149-a4cf-1855a0f944b4",
+      "name": "Code in JavaScript"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Gmail Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get a message": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Read/Write Files from Disk",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read/Write Files from Disk": {
+      "main": [
+        [
+          {
+            "node": "Extract from File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from File": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request1": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [
+          {
+            "node": "Convert to File",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false,
+    "timeSavedMode": "fixed",
+    "timezone": "Asia/Kolkata",
+    "callerPolicy": "workflowsFromSameOwner",
+    "executionTimeout": -1
+  },
+  "versionId": "96be88f3-4c01-4d5f-9e55-335e324b152e",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "1b66c44e52c94708e63b90873531df5d96d0ebb4939c4154bc1b6064067018f3"
+  },
+  "id": "evjdWoS5SSqMiplX",
+  "tags": []
+}
