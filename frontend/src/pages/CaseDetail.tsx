@@ -472,7 +472,7 @@ export function CaseDetail() {
                 {/* Financial Information */}
                 <div className="bg-linear-to-br from-blue-50 to-blue-100 p-4 rounded-lg">
                   <div className="flex items-center gap-2 mb-2">
-                    <DollarSign className="h-4 w-4 text-blue-600" />
+                    {/* <DollarSign className="h-4 w-4 text-blue-600" /> */}
                     <p className="text-xs font-medium text-blue-900">Outstanding Amount</p>
                   </div>
                   <p className="text-2xl font-bold text-blue-900">
