@@ -2,21 +2,14 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { ArrowLeft, Mail, Phone, FileText, Scale, User, ChevronDown, ChevronUp, ChevronRight, ChevronLeft, Building2, Calendar, DollarSign, ArrowUp, ArrowDown, Repeat, ArrowRight, Loader2 } from 'lucide-react'
+import { ArrowLeft, FileText, ChevronRight, ChevronLeft, Building2, Calendar, ArrowUp, ArrowDown, Repeat, Loader2, Mail, Phone } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useState, useEffect } from 'react'
 import { ConfirmationModal } from '@/components/ui/confirmation-modal'
 import { Modal } from '@/components/ui/modal'
 import { useUIStore, useAuthStore } from '@/stores'
 import { caseService, type Case, type TimelineEvent } from '@/services/caseService'
-
-const eventIcons: Record<string, React.ComponentType<any>> = {
-  email: Mail,
-  call: Phone,
-  status_change: FileText,
-  payment: DollarSign,
-  legal_notice: Scale
-}
+import { TimelineCard, type TimelineEventType } from '@/components/TimelineCard'
 
 export function CaseDetail() {
   const { caseId } = useParams()
@@ -25,7 +18,6 @@ export function CaseDetail() {
   const [caseData, setCaseData] = useState<Case | null>(null)
   const [timeline, setTimeline] = useState<TimelineEvent[]>([])
   const [loading, setLoading] = useState(true)
-  const [expandedEmails, setExpandedEmails] = useState<Set<string>>(new Set())
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc') // desc = newest first
   const [isReassignModalOpen, setIsReassignModalOpen] = useState(false)
@@ -38,6 +30,12 @@ export function CaseDetail() {
     to: '',
     description: '',
     amount: '',
+    emailSubject: '',
+    emailContent: '',
+    agencyName: '',
+    reason: '',
+    previousStatus: '',
+    newStatus: '',
     timestamp: new Date().toISOString().slice(0, 16)
   })
 
@@ -74,16 +72,6 @@ export function CaseDetail() {
     return sortOrder === 'desc' ? dateB - dateA : dateA - dateB
   })
 
-  const toggleEmail = (eventId: string) => {
-    const newExpanded = new Set(expandedEmails)
-    if (newExpanded.has(eventId)) {
-      newExpanded.delete(eventId)
-    } else {
-      newExpanded.add(eventId)
-    }
-    setExpandedEmails(newExpanded)
-  }
-
   const toggleSortOrder = () => {
     setSortOrder(prev => prev === 'desc' ? 'asc' : 'desc')
   }
@@ -101,7 +89,7 @@ export function CaseDetail() {
   const handleAddTimelineEvent = async () => {
     if (!caseId) return
     
-    // Validate form
+    // Validate form based on event type
     if (!eventForm.title.trim()) {
       showToast('Please enter a title for the event', 'error')
       return
@@ -118,7 +106,7 @@ export function CaseDetail() {
       return
     }
     
-    // Validate payment amount
+    // Event-specific validations
     if (eventForm.eventType === 'payment') {
       if (!eventForm.amount || parseFloat(eventForm.amount) <= 0) {
         showToast('Please enter a valid payment amount', 'error')
@@ -126,9 +114,31 @@ export function CaseDetail() {
       }
     }
     
-    // Validate legal notice description
+    if (eventForm.eventType === 'email') {
+      if (!eventForm.emailSubject.trim()) {
+        showToast('Please enter an email subject', 'error')
+        return
+      }
+      if (!eventForm.emailContent.trim()) {
+        showToast('Please enter email content', 'error')
+        return
+      }
+    }
+    
     if (eventForm.eventType === 'legal_notice' && !eventForm.description.trim()) {
       showToast('Please enter notice details', 'error')
+      return
+    }
+    
+    if (eventForm.eventType === 'status_change') {
+      if (!eventForm.previousStatus.trim() || !eventForm.newStatus.trim()) {
+        showToast('Please enter both previous and new status', 'error')
+        return
+      }
+    }
+    
+    if ((eventForm.eventType === 'agency_assignment' || eventForm.eventType === 'reassignment') && !eventForm.agencyName.trim()) {
+      showToast('Please enter an agency name', 'error')
       return
     }
     
@@ -141,13 +151,29 @@ export function CaseDetail() {
         from: eventForm.from,
         to: eventForm.to,
         description: eventForm.description,
-        timestamp: new Date(eventForm.timestamp).toISOString()
+        timestamp: new Date(eventForm.timestamp).toISOString(),
+        metadata: {}
       }
       
-      // Add metadata for payment events
+      // Add metadata based on event type
       if (eventForm.eventType === 'payment' && eventForm.amount) {
-        eventData.metadata = {
-          amount: parseFloat(eventForm.amount)
+        eventData.metadata.amount = parseFloat(eventForm.amount)
+      }
+      
+      if (eventForm.eventType === 'email') {
+        eventData.metadata.emailSubject = eventForm.emailSubject
+        eventData.metadata.emailContent = eventForm.emailContent
+      }
+      
+      if (eventForm.eventType === 'status_change') {
+        eventData.metadata.previousStatus = eventForm.previousStatus
+        eventData.metadata.newStatus = eventForm.newStatus
+      }
+      
+      if (eventForm.eventType === 'agency_assignment' || eventForm.eventType === 'reassignment') {
+        eventData.metadata.agencyName = eventForm.agencyName
+        if (eventForm.reason) {
+          eventData.metadata.reason = eventForm.reason
         }
       }
       
@@ -164,6 +190,12 @@ export function CaseDetail() {
         to: '',
         description: '',
         amount: '',
+        emailSubject: '',
+        emailContent: '',
+        agencyName: '',
+        reason: '',
+        previousStatus: '',
+        newStatus: '',
         timestamp: new Date().toISOString().slice(0, 16)
       })
       
@@ -201,16 +233,6 @@ export function CaseDetail() {
       currency: 'USD',
       minimumFractionDigits: 0
     }).format(value)
-  }
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    })
   }
 
   return (
@@ -306,143 +328,25 @@ export function CaseDetail() {
 
                   {/* Timeline events */}
                   <div className="space-y-6">
-                    {sortedTimeline.map((event) => {
-                      const Icon = eventIcons[event.eventType] || FileText
-                      const isEmail = event.eventType === 'email'
-                      const isExpanded = expandedEmails.has(event.id)
-                      
-                      return (
-                        <div key={event.id} className="relative flex gap-4">
-                          {/* Icon circle */}
-                          <div className={cn(
-                            "relative z-10 flex h-12 w-12 items-center justify-center rounded-full border-2 shrink-0",
-                            "bg-slate-50 border-slate-300"
-                          )}>
-                            <Icon className="h-5 w-5 text-slate-600" />
-                          </div>
-
-                          {/* Event content */}
-                          <div className="flex-1 pb-6">
-                            <div className={cn(
-                              "rounded-lg border-2 transition-all bg-white border-slate-200",
-                              isEmail && "cursor-pointer hover:shadow-md"
-                            )}
-                            onClick={() => isEmail && toggleEmail(event.id)}
-                            >
-                              <div className="p-4">
-                                <div className="flex items-start justify-between mb-2">
-                                  <div className="flex-1">
-                                    <div className="flex items-center gap-3 mb-2 flex-wrap">
-                                      {/* From -> To badges */}
-                                      {event.from && event.to && (
-                                        <div className="flex items-center gap-2">
-                                          <Badge variant="outline" className="text-xs">
-                                            <User className="h-3 w-3 mr-1" />
-                                            {/*  harcoding this */}
-                                            customer
-                                          </Badge>
-                                          <ArrowRight className="h-3 w-3 text-slate-400" />
-                                          <Badge variant="outline" className="text-xs">
-                                            <User className="h-3 w-3 mr-1" />
-                                            {/*  harcoding this */}
-                                            fedex
-                                          </Badge>
-                                        </div>
-                                      )}
-                                      {/* Event type badge */}
-                                      <Badge variant="secondary" className="text-xs capitalize">
-                                        {event.eventType.replace('_', ' ')}
-                                      </Badge>
-                                    </div>
-                                    <h4 className="font-semibold text-slate-900 text-sm">
-                                      {event.title}
-                                    </h4>
-                                  </div>
-                                  <div className="flex items-start gap-2 shrink-0">
-                                    <div className="flex items-center gap-2">
-                                      <Calendar className="h-4 w-4 text-slate-400" />
-                                      <span className="text-sm font-medium text-slate-700 whitespace-nowrap">
-                                        {formatDate(event.timestamp)}
-                                      </span>
-                                    </div>
-                                    {isEmail && (
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        className="h-8 w-8 p-0"
-                                      >
-                                        {isExpanded ? (
-                                          <ChevronUp className="h-4 w-4" />
-                                        ) : (
-                                          <ChevronDown className="h-4 w-4" />
-                                        )}
-                                      </Button>
-                                    )}
-                                  </div>
-                                </div>
-                                
-                                {/* Email subject preview */}
-                                {isEmail && event.metadata?.emailSubject && !isExpanded && (
-                                  <p className="text-sm text-slate-600 mt-2">
-                                    <span className="font-medium">Subject:</span> {event.metadata.emailSubject}
-                                  </p>
-                                )}
-
-                                {/* Expanded email content */}
-                                {isEmail && isExpanded && (
-                                  <div className="mt-3 space-y-3">
-                                    {event.metadata?.emailSubject && (
-                                      <div className="bg-slate-50 p-3 rounded">
-                                        <p className="text-xs text-slate-500 font-medium mb-1">Subject</p>
-                                        <p className="text-sm text-slate-900">{event.metadata.emailSubject}</p>
-                                      </div>
-                                    )}
-                                    <div className="bg-slate-50 p-3 rounded">
-                                      <p className="text-xs text-slate-500 font-medium mb-1">Message</p>
-                                      <p className="text-sm text-slate-700 leading-relaxed">
-                                        {event.metadata?.emailContent || 'No content available.'}
-                                      </p>
-                                    </div>
-                                    <div className="flex items-center gap-2 pt-2">
-                                      <Button variant="outline" size="sm">
-                                        <Mail className="h-3 w-3 mr-2" />
-                                        Reply
-                                      </Button>
-                                      <Button variant="ghost" size="sm">
-                                        Forward
-                                      </Button>
-                                    </div>
-                                  </div>
-                                )}
-
-                                {/* Non-email content */}
-                                {!isEmail && (
-                                  <p className="text-sm text-slate-600 mt-2">
-                                    {event.description}
-                                  </p>
-                                )}
-
-                                {/* Metadata */}
-                                {event.metadata && !isEmail && (
-                                  <div className="mt-3 pt-3 border-t border-slate-100">
-                                    {event.metadata.amount && (
-                                      <p className="text-xs text-slate-500">
-                                        <span className="font-medium">Amount:</span> {formatCurrency(event.metadata.amount)}
-                                      </p>
-                                    )}
-                                    {event.metadata.previousStatus && event.metadata.newStatus && (
-                                      <p className="text-xs text-slate-500">
-                                        <span className="font-medium">Status Change:</span> {event.metadata.previousStatus} → {event.metadata.newStatus}
-                                      </p>
-                                    )}
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      )
-                    })}
+                    {sortedTimeline.map((event) => (
+                      <TimelineCard
+                        key={event.id}
+                        id={event.id}
+                        eventType={event.eventType as TimelineEventType}
+                        title={event.title}
+                        timestamp={event.timestamp}
+                        from={event.from}
+                        to={event.to}
+                        description={event.description}
+                        metadata={event.metadata}
+                        onReply={() => {
+                          showToast('Reply functionality coming soon', 'info')
+                        }}
+                        onForward={() => {
+                          showToast('Forward functionality coming soon', 'info')
+                        }}
+                      />
+                    ))}
                   </div>
                 </div>
               )}
@@ -620,6 +524,12 @@ export function CaseDetail() {
             to: '',
             description: '',
             amount: '',
+            emailSubject: '',
+            emailContent: '',
+            agencyName: '',
+            reason: '',
+            previousStatus: '',
+            newStatus: '',
             timestamp: new Date().toISOString().slice(0, 16)
           })
         }}
@@ -634,11 +544,27 @@ export function CaseDetail() {
             <select
               className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               value={eventForm.eventType}
-              onChange={(e) => setEventForm({ ...eventForm, eventType: e.target.value, title: '', description: '', amount: '' })}
+              onChange={(e) => setEventForm({ 
+                ...eventForm, 
+                eventType: e.target.value, 
+                title: '', 
+                description: '', 
+                amount: '',
+                emailSubject: '',
+                emailContent: '',
+                agencyName: '',
+                reason: '',
+                previousStatus: '',
+                newStatus: ''
+              })}
             >
               <option value="call">Call</option>
+              <option value="email">Email</option>
               <option value="payment">Payment</option>
+              <option value="status_change">Status Change</option>
               <option value="legal_notice">Legal Notice</option>
+              <option value="agency_assignment">Agency Assignment</option>
+              <option value="reassignment">Reassignment</option>
             </select>
           </div>
 
@@ -696,7 +622,49 @@ export function CaseDetail() {
                 value={eventForm.title}
                 onChange={(e) => setEventForm({ ...eventForm, title: e.target.value })}
               />
+              <div className="mt-3">
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Call Notes
+                </label>
+                <textarea
+                  className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Enter call notes"
+                  rows={3}
+                  value={eventForm.description}
+                  onChange={(e) => setEventForm({ ...eventForm, description: e.target.value })}
+                />
+              </div>
             </div>
+          )}
+
+          {/* Email specific fields */}
+          {eventForm.eventType === 'email' && (
+            <>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Email Subject *
+                </label>
+                <input
+                  type="text"
+                  className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="e.g., Payment Reminder"
+                  value={eventForm.emailSubject}
+                  onChange={(e) => setEventForm({ ...eventForm, emailSubject: e.target.value, title: e.target.value })}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Email Content *
+                </label>
+                <textarea
+                  className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Enter email content"
+                  rows={5}
+                  value={eventForm.emailContent}
+                  onChange={(e) => setEventForm({ ...eventForm, emailContent: e.target.value })}
+                />
+              </div>
+            </>
           )}
 
           {/* Payment specific fields */}
@@ -775,6 +743,104 @@ export function CaseDetail() {
             </>
           )}
 
+          {/* Status Change specific fields */}
+          {eventForm.eventType === 'status_change' && (
+            <>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Change Title *
+                </label>
+                <input
+                  type="text"
+                  className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="e.g., Case status updated"
+                  value={eventForm.title}
+                  onChange={(e) => setEventForm({ ...eventForm, title: e.target.value })}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                    Previous Status *
+                  </label>
+                  <input
+                    type="text"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="e.g., pending"
+                    value={eventForm.previousStatus}
+                    onChange={(e) => setEventForm({ ...eventForm, previousStatus: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                    New Status *
+                  </label>
+                  <input
+                    type="text"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="e.g., in_progress"
+                    value={eventForm.newStatus}
+                    onChange={(e) => setEventForm({ ...eventForm, newStatus: e.target.value })}
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Additional Notes
+                </label>
+                <textarea
+                  className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Enter any additional details"
+                  rows={3}
+                  value={eventForm.description}
+                  onChange={(e) => setEventForm({ ...eventForm, description: e.target.value })}
+                />
+              </div>
+            </>
+          )}
+
+          {/* Agency Assignment / Reassignment fields */}
+          {(eventForm.eventType === 'agency_assignment' || eventForm.eventType === 'reassignment') && (
+            <>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Event Title *
+                </label>
+                <input
+                  type="text"
+                  className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder={eventForm.eventType === 'reassignment' ? 'e.g., Case Reassigned' : 'e.g., Case Assigned to Agency'}
+                  value={eventForm.title}
+                  onChange={(e) => setEventForm({ ...eventForm, title: e.target.value })}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Agency Name *
+                </label>
+                <input
+                  type="text"
+                  className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="e.g., Premier Recovery Services"
+                  value={eventForm.agencyName}
+                  onChange={(e) => setEventForm({ ...eventForm, agencyName: e.target.value })}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Reason / Notes
+                </label>
+                <textarea
+                  className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Enter reason for assignment/reassignment"
+                  rows={3}
+                  value={eventForm.reason}
+                  onChange={(e) => setEventForm({ ...eventForm, reason: e.target.value, description: e.target.value })}
+                />
+              </div>
+            </>
+          )}
+
           <div className="flex gap-3 pt-4">
             <Button
               variant="outline"
@@ -788,6 +854,12 @@ export function CaseDetail() {
                   to: '',
                   description: '',
                   amount: '',
+                  emailSubject: '',
+                  emailContent: '',
+                  agencyName: '',
+                  reason: '',
+                  previousStatus: '',
+                  newStatus: '',
                   timestamp: new Date().toISOString().slice(0, 16)
                 })
               }}

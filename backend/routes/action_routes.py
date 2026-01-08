@@ -38,7 +38,7 @@ def get_pending_actions():
 
 @actions_bp.route('/upload', methods=['POST'])
 def upload_cases():
-    """Upload and process CSV/Excel file with case data"""
+    """Upload and process CSV file with case data"""
     if 'file' not in request.files:
         return jsonify({'error': 'No file part'}), 400
     
@@ -48,21 +48,65 @@ def upload_cases():
 
     # Validate file extension
     filename = secure_filename(file.filename or '')
-    if not filename.lower().endswith(('.csv', '.xlsx', '.xls')):
-        return jsonify({'error': 'Invalid file type. Please upload CSV or Excel file'}), 400
+    if not filename.lower().endswith('.csv'):
+        return jsonify({'error': 'Invalid file type. Please upload CSV file'}), 400
 
     try:
-        # Save file temporarily
-        base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        userdata_dir = os.path.join(base_dir, 'userdata')
+        # Read CSV directly from memory without saving
+        import io
+        stream = io.StringIO(file.stream.read().decode("UTF8"), newline=None)
+        reader = csv.DictReader(stream)
         
-        if not os.path.exists(userdata_dir):
-            os.makedirs(userdata_dir)
+        cases_created = 0
+        cases_skipped = 0
+        
+        for row in reader:
+            # Extract required fields from CSV
+            invoice_id = row.get('invoice_id') or row.get('Invoice ID')
+            account_number = row.get('account_number') or row.get('Account Number')
+            customer_email = row.get('customer_email') or row.get('Customer Email')
             
-        file_path = os.path.join(userdata_dir, filename)
-        file.save(file_path)
+            if not invoice_id or not account_number or not customer_email:
+                print(f"Skipping row due to missing required fields: {row}")
+                cases_skipped += 1
+                continue
+            
+            # Check if customer exists in database by email
+            customer = Customer.query.filter_by(email=customer_email).first()
+            
+            if not customer:
+                print(f"Customer not found for email: {customer_email}")
+                cases_skipped += 1
+                continue
+            
+            # Check if case already exists for this invoice
+            existing_case = Case.query.filter_by(invoice_id=invoice_id).first()
+            if existing_case:
+                print(f"Case already exists for invoice: {invoice_id}")
+                cases_skipped += 1
+                continue
+            
+            # Create new case with assigned_agency as null
+            new_case = Case(
+            id=str(uuid.uuid4()),
+            invoice_id=invoice_id,
+            customer_id=customer.id,
+            account_number=account_number,
+            amount_due=float(row.get('amount_due', 0)) if row.get('amount_due') else 0.0,
+            status=row.get('status', 'new'),
+            assigned_agency=None,
+            created_at=datetime.now().isoformat(),
+            last_updated=datetime.now().isoformat()
+            )
+            
+            db.session.add(new_case)
+            cases_created += 1
         
-        response_message = f"Successfully received the file."
+        db.session.commit()
+        
+        response_message = f"Successfully processed the CSV file. Created {cases_created} cases, skipped {cases_skipped} rows."
+        
+        response_message = f"Successfully processed the CSV file."
             
         return jsonify({
             'message': response_message,
@@ -102,7 +146,6 @@ def update_timeline():
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
-
 
 @actions_bp.route('/print-json', methods=['POST'])
 def print_json():
