@@ -102,3 +102,15 @@ def update_timeline():
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
+
+
+@actions_bp.route('/print-json', methods=['POST'])
+def print_json():
+    try:
+        data = request.get_json()
+        print("Received JSON Data:")
+        print(data)
+        return jsonify({"message": "JSON received and printed"}), 200
+    except Exception as e:
+        print(f"Error printing JSON: {e}")
+        return jsonify({"error": "Failed to process JSON"}), 400
