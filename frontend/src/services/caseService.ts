@@ -22,6 +22,8 @@ export interface Case {
 export interface TimelineEvent {
   id: string;
   timestamp: string;
+  from: string;
+  to: string;
   eventType: string;
   title: string;
   metadata?: any;

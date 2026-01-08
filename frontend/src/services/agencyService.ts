@@ -14,6 +14,7 @@ export interface Agency {
   activeCases?: number;
   recoveredAmount?: number;
   successRate?: number;
+  activeOutstandingAmount?: number;
 }
 
 // Agency Services

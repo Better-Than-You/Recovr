@@ -1,8 +1,10 @@
 from app import create_app, db
-from models import User, Agency, Customer, Case, TimelineEvent, Notification
+from models import User, Agency, Customer, Case, TimelineEvent, Notification, AuditLog
 from datetime import datetime, timedelta
 import random
+from faker import Faker
 
+fake = Faker()
 app = create_app()
 
 def seed_data():
@@ -12,31 +14,25 @@ def seed_data():
         db.create_all()
         
         print("Creating Users...")
-        first_names = ['John', 'Sarah', 'Mike', 'Emily', 'David', 'Jessica', 'Chris', 'Amanda', 'Ryan', 'Lisa',
-                      'Kevin', 'Rachel', 'Brian', 'Nicole', 'Tom', 'Michelle', 'James', 'Laura', 'Daniel', 'Stephanie',
-                      'Mark', 'Jennifer', 'Paul', 'Rebecca', 'Steve', 'Karen', 'Eric', 'Susan', 'Jason', 'Carol']
-        last_names = ['Smith', 'Johnson', 'Williams', 'Brown', 'Jones', 'Garcia', 'Miller', 'Davis', 'Rodriguez', 'Martinez',
-                     'Hernandez', 'Lopez', 'Gonzalez', 'Wilson', 'Anderson', 'Thomas', 'Taylor', 'Moore', 'Jackson', 'Martin',
-                     'Lee', 'Perez', 'Thompson', 'White', 'Harris', 'Sanchez', 'Clark', 'Ramirez', 'Lewis', 'Robinson']
-        
         users = [
-            User(id='u1', name='Admin User', email='admin@fedex.com', role='admin'),
-            User(id='u2', name='FedEx Manager', email='manager@fedex.com', role='fedex'),
+            User(id='u1', name='Admin User', email='admin@fedex.com', role='admin', password_hash='hashed_password'),
+            User(id='u2', name='FedEx Manager', email='manager@fedex.com', role='fedex', password_hash='hashed_password'),
         ]
         
-        # Generate 100+ users
-        for i in range(3, 105):
-            first = random.choice(first_names)
-            last = random.choice(last_names)
+        # Generate 100+ users using Faker
+        for i in range(3, 153):
             role = random.choice(['fedex', 'dca', 'admin'])
-            domain = 'fedex.com' if role == 'fedex' else ('admin.com' if role == 'admin' else random.choice(['premier.com', 'elite.com', 'rapid.com']))
+            domain = 'fedex.com' if role == 'fedex' else ('admin.com' if role == 'admin' else fake.domain_name())
             users.append(User(
                 id=f'u{i}',
-                name=f'{first} {last}',
-                email=f'{first.lower()}.{last.lower()}{i}@{domain}',
-                role=role
+                name=fake.name(),
+                email=f'{fake.user_name()}{i}@{domain}',
+                role=role,
+                password_hash='hashed_password'
             ))
         db.session.add_all(users)
+        db.session.commit()
+        print(f"  ✓ Created {len(users)} users")
 
         print("Creating Agencies...")
         agency_prefixes = ['Premier', 'Elite', 'Rapid', 'Swift', 'Apex', 'Global', 'National', 'Superior', 
@@ -48,17 +44,38 @@ def seed_data():
                           'Asset Recovery', 'Credit Solutions', 'Recovery Partners', 'Collection Experts']
         
         agencies = [
-            Agency(id='prs', name='Premier Recovery Solutions', performance_score=0.87, active_outstanding_amount=2345000, 
-                  email='contact@premier.com', phone='+1 (555) 100-0001'),
-            Agency(id='eca', name='Elite Collection Agency', performance_score=0.92, active_outstanding_amount=3120000, 
-                  email='contact@elite.com', phone='+1 (555) 100-0002'),
-            Agency(id='rra', name='Rapid Recovery Associates', performance_score=0.79, active_outstanding_amount=1890000, 
-                  email='contact@rapid.com', phone='+1 (555) 100-0003'),
+            Agency(
+                id='prs', 
+                name='Premier Recovery Solutions', 
+                performance_score=0.87, 
+                active_outstanding_amount=2345000, 
+                email='contact@premier.com', 
+                phone='+1 (555) 100-0001',
+                summary='Leading debt collection agency with over 15 years of experience in commercial recovery.'
+            ),
+            Agency(
+                id='eca', 
+                name='Elite Collection Agency', 
+                performance_score=0.92, 
+                active_outstanding_amount=3120000, 
+                email='contact@elite.com', 
+                phone='+1 (555) 100-0002',
+                summary='Top-rated agency specializing in high-value accounts and international collections.'
+            ),
+            Agency(
+                id='rra', 
+                name='Rapid Recovery Associates', 
+                performance_score=0.79, 
+                active_outstanding_amount=1890000, 
+                email='contact@rapid.com', 
+                phone='+1 (555) 100-0003',
+                summary='Fast-track collection services with focus on quick resolution and customer satisfaction.'
+            ),
         ]
         
-        # Generate 100+ agencies
+        # Generate 100+ agencies using Faker
         used_names = {'Premier Recovery Solutions', 'Elite Collection Agency', 'Rapid Recovery Associates'}
-        for i in range(4, 105):
+        for i in range(4, 153):
             while True:
                 prefix = random.choice(agency_prefixes)
                 suffix = random.choice(agency_suffixes)
@@ -73,83 +90,47 @@ def seed_data():
                 name=name,
                 performance_score=round(random.uniform(0.65, 0.98), 2),
                 active_outstanding_amount=random.randint(500000, 5000000),
-                email=f'contact@{prefix.lower()}{suffix.split()[0].lower()}.com',
-                phone=f'+1 (555) {random.randint(100, 999)}-{random.randint(1000, 9999)}'
+                email=fake.company_email(),
+                phone=fake.phone_number(),
+                summary=fake.catch_phrase() + '. ' + fake.bs().capitalize() + '.'
             ))
         db.session.add_all(agencies)
+        db.session.commit()
+        print(f"  ✓ Created {len(agencies)} agencies")
         
         print("Creating Customers...")
-        company_prefixes = ['Acme', 'Global', 'Midwest', 'TechStart', 'Coastal', 'Northern', 'Summit', 'Pacific',
-                           'Metro', 'Eastern', 'Western', 'Atlantic', 'Central', 'Southern', 'Mountain', 'United',
-                           'Superior', 'Premium', 'Omega', 'Delta', 'Alpha', 'Beta', 'Quantum', 'Stellar', 'Pioneer',
-                           'Frontier', 'Horizon', 'Apex', 'Nexus', 'Vertex', 'Zenith', 'Prime', 'Elite', 'Dynamic']
-        company_suffixes = ['Corporation', 'Logistics Inc', 'Manufacturing', 'Solutions', 'Retail Group', 'Distributors',
-                           'Industries', 'Imports LLC', 'Services Group', 'Supply Chain', 'Tech Corp', 'Shipping',
-                           'Warehousing', 'Freight LLC', 'Express', 'Enterprises', 'Systems', 'Partners', 'Holdings',
-                           'Group Inc', 'Technologies', 'International', 'Co', 'Associates', 'Ventures']
-        
-        cities_states = [
-            ('New York', 'NY', '10001'), ('Los Angeles', 'CA', '90001'), ('Chicago', 'IL', '60601'),
-            ('Houston', 'TX', '77001'), ('Phoenix', 'AZ', '85001'), ('Philadelphia', 'PA', '19101'),
-            ('San Antonio', 'TX', '78201'), ('San Diego', 'CA', '92101'), ('Dallas', 'TX', '75201'),
-            ('San Jose', 'CA', '95101'), ('Austin', 'TX', '78701'), ('Jacksonville', 'FL', '32099'),
-            ('Fort Worth', 'TX', '76101'), ('Columbus', 'OH', '43085'), ('Charlotte', 'NC', '28201'),
-            ('San Francisco', 'CA', '94101'), ('Indianapolis', 'IN', '46201'), ('Seattle', 'WA', '98101'),
-            ('Denver', 'CO', '80201'), ('Boston', 'MA', '02101'), ('Nashville', 'TN', '37201'),
-            ('Detroit', 'MI', '48201'), ('Portland', 'OR', '97201'), ('Las Vegas', 'NV', '89101'),
-            ('Baltimore', 'MD', '21201'), ('Milwaukee', 'WI', '53201'), ('Atlanta', 'GA', '30301'),
-            ('Miami', 'FL', '33101'), ('Kansas City', 'MO', '64101'), ('Salt Lake City', 'UT', '84101')
-        ]
-        
-        street_types = ['Street', 'Avenue', 'Boulevard', 'Drive', 'Lane', 'Way', 'Circle', 'Plaza', 'Road', 'Court']
-        street_names = ['Main', 'Commerce', 'Business Park', 'Industrial', 'Harbor', 'Innovation', 'Tech',
-                       'Mountain View', 'Beach', 'Downtown', 'Market', 'Corporate', 'Enterprise', 'Executive']
-        
         customers = []
-        used_company_names = set()
         
-        for i in range(1, 152):
-            while True:
-                prefix = random.choice(company_prefixes)
-                suffix = random.choice(company_suffixes)
-                name = f'{prefix} {suffix}'
-                if name not in used_company_names:
-                    used_company_names.add(name)
-                    break
-            
-            city, state, zip_code = random.choice(cities_states)
-            street_num = random.randint(100, 9999)
-            street = f'{street_num} {random.choice(street_names)} {random.choice(street_types)}'
-            
-            company_short = prefix.lower().replace(' ', '')
-            domain = f'{company_short}{suffix.split()[0].lower()}.com'
-            
+        # Generate 150 customers using Faker
+        for i in range(1, 151):
             customers.append(Customer(
                 id=f'CUST-{i:03d}',
-                name=name,
-                email=f'{'accounts' if i % 3 == 0 else 'finance' if i % 3 == 1 else 'billing'}@{domain}',
-                phone=f'+1 ({random.randint(200, 999)}) {random.randint(100, 999)}-{random.randint(1000, 9999)}',
-                address=street,
-                city=city,
-                state=state,
-                zip_code=zip_code,
+                name=fake.company(),
+                email=fake.company_email(),
+                phone=fake.phone_number(),
+                address=fake.street_address(),
+                city=fake.city(),
+                state=fake.state_abbr(),
+                zip_code=fake.zipcode(),
                 payment_history=random.choice(['excellent', 'good', 'fair', 'poor']),
-                last_contact=(datetime.now() - timedelta(days=random.randint(0, 90))).strftime('%Y-%m-%d')
+                last_contact=(fake.date_between(start_date='-90d', end_date='today')).strftime('%Y-%m-%d')
             ))
         db.session.add_all(customers)
+        db.session.commit()
+        print(f"  ✓ Created {len(customers)} customers")
         
         print("Creating Cases...")
         statuses = ['pending', 'assigned', 'in_progress', 'resolved', 'legal']
         cases = []
         
-        # Generate 100+ cases
-        for i in range(1, 152):
-            customer = customers[(i - 1) % len(customers)]
-            agency_id = random.choice([a.id for a in agencies]) if i % 7 != 0 else None  # Some cases unassigned
+        # Generate 150 cases using Faker
+        for i in range(1, 151):
+            customer = random.choice(customers)
+            agency_id = random.choice([a.id for a in agencies]) if i % 7 != 0 else None
             status = random.choice(statuses) if agency_id else 'pending'
             
             aging_days = random.randint(15, 180)
-            due_date = datetime.now() - timedelta(days=aging_days)
+            due_date = fake.date_between(start_date=f'-{aging_days}d', end_date=f'-{aging_days}d')
             last_contact_days = random.randint(0, min(aging_days, 30))
             
             # Recovery probability based on aging and status
@@ -175,8 +156,22 @@ def seed_data():
             if status in ['resolved', 'legal']:
                 recovered_amount = int(invoice_amount * random.uniform(0.3, 0.9))
             
+            assigned_reason = None
+            if agency_id and status != 'pending':
+                reasons = [
+                    f"Agency has highest performance score of {random.randint(85, 95)}% for similar cases",
+                    f"Specialized in {random.choice(['commercial', 'retail', 'industrial'])} debt recovery",
+                    "Agency has established relationship with customer's industry",
+                    f"Geographic proximity to customer location ({customer.city}, {customer.state})",
+                    "Agency has proven track record with accounts over $50K",
+                    "Recommended based on case complexity and recovery probability"
+                ]
+                assigned_reason = random.choice(reasons)
+            
+            created_time = datetime.combine(due_date, datetime.min.time()) + timedelta(hours=8)
+            
             cases.append(Case(
-                id=f'CS-2024-{i:03d}',
+                id=f'CS-2024-{i:04d}',
                 customer_name=customer.name,
                 customer_id=customer.id,
                 invoice_amount=invoice_amount,
@@ -184,14 +179,17 @@ def seed_data():
                 aging_days=aging_days,
                 recovery_probability=recovery_prob,
                 assigned_agency_id=agency_id,
+                assigned_agency_reason=assigned_reason,
                 status=status,
                 account_number=f'{customer.id.split("-")[1]}-{random.randint(100000, 999999)}',
                 due_date=due_date.strftime('%Y-%m-%d'),
-                last_contact=(datetime.now() - timedelta(days=last_contact_days)).strftime('%Y-%m-%d'),
-                created_at=due_date.strftime('%Y-%m-%dT08:00:00Z'),
+                last_contact=(fake.date_between(start_date=f'-{last_contact_days}d', end_date='today')).strftime('%Y-%m-%d'),
+                created_at=created_time.strftime('%Y-%m-%dT%H:%M:%SZ'),
                 auto_assign_after_hours=random.choice([12, 24, 36, 48]) if status == 'pending' else None
             ))
         db.session.add_all(cases)
+        db.session.commit()
+        print(f"  ✓ Created {len(cases)} cases")
         
         print("Creating Timeline Events...")
         event_types = ['email', 'status_change', 'payment', 'call', 'legal_notice']
@@ -207,14 +205,15 @@ def seed_data():
         events = []
         event_counter = 1
         
-        # Generate timeline events for cases (at least 2-5 events per case)
-        for case in cases[:100]:  # Generate for first 100 cases to keep reasonable
+        # Generate timeline events for all cases (2-6 events per case)
+        for case in cases:
             num_events = random.randint(2, 6)
             case_start = datetime.strptime(case.created_at, '%Y-%m-%dT%H:%M:%SZ')
             
             for j in range(num_events):
                 event_type = random.choice(event_types)
-                actor = random.choice(actors)
+                from_actor = random.choice(actors)
+                to_actor = random.choice([a for a in actors if a != from_actor])
                 title = random.choice(event_titles[event_type])
                 
                 # Event timestamp between case creation and now
@@ -225,10 +224,11 @@ def seed_data():
                     id=f'evt-{event_counter:05d}',
                     case_id=case.id,
                     timestamp=event_time.strftime('%Y-%m-%dT%H:%M:%SZ'),
-                    actor=actor,
+                    from_=from_actor,
+                    to_=to_actor,
                     event_type=event_type,
                     title=title,
-                    description=f'{title} for account {case.account_number}'
+                    description=fake.sentence() + f' Account: {case.account_number}'
                 )
                 
                 # Add metadata based on event type
@@ -237,21 +237,17 @@ def seed_data():
                     event.meta_amount = random.randint(min(5000, max_payment), max(5000, max_payment))
                 elif event_type == 'email':
                     event.meta_email_subject = f'{title} - {case.account_number}'
-                    event.meta_email_subject = f'{title} - {case.account_number}'
+                    event.meta_email_content = fake.paragraph(nb_sentences=3)
                 elif event_type == 'status_change':
                     event.meta_previous_status = random.choice(['pending', 'overdue', 'assigned'])
                     event.meta_new_status = case.status
                 
                 events.append(event)
                 event_counter += 1
-                
-                if event_counter > 300:  # Cap at 300 events
-                    break
-            
-            if event_counter > 300:
-                break
         
         db.session.add_all(events)
+        db.session.commit()
+        print(f"  ✓ Created {len(events)} timeline events")
         
         print("Creating Notifications...")
         notification_types = ['action_required', 'payment_received', 'status_change', 'reminder', 'case_update']
@@ -290,10 +286,10 @@ def seed_data():
         
         notifications = []
         
-        # Generate 100+ notifications
-        for i in range(1, 125):
+        # Generate 120 notifications using Faker
+        for i in range(1, 121):
             notif_type = random.choice(notification_types)
-            case = random.choice(cases[:50])  # Reference first 50 cases
+            case = random.choice(cases)
             priority = random.choice(['high', 'medium', 'low'])
             read = random.choice([True, False])
             
@@ -301,37 +297,80 @@ def seed_data():
             title = template.format(case_id=case.id, amount=random.randint(5000, 50000))
             
             messages = {
-                'action_required': f'Payment plan acceptance needs review and approval for {case.customer_name}',
-                'payment_received': f'Payment received for case {case.id}',
-                'status_change': f'{case.id} status changed to "{case.status}"',
-                'reminder': f'{case.id} - Customer follow-up needed',
-                'case_update': f'Case {case.id} has been updated'
+                'action_required': fake.sentence() + f' for {case.customer_name}',
+                'payment_received': f'Payment of ${random.randint(5000, 50000)} received for case {case.id}',
+                'status_change': f'{case.id} status changed from {random.choice(statuses)} to "{case.status}"',
+                'reminder': fake.sentence() + f' - Case {case.id}',
+                'case_update': fake.sentence() + f' - {case.id}'
             }
             
-            timestamp = datetime.now() - timedelta(days=random.randint(0, 30), hours=random.randint(0, 23))
+            timestamp = fake.date_time_between(start_date='-30d', end_date='now')
             
             notifications.append(Notification(
-                id=f'notif-{i:03d}',
+                id=f'notif-{i:04d}',
                 type=notif_type,
                 title=title,
                 message=messages[notif_type],
                 timestamp=timestamp.strftime('%Y-%m-%dT%H:%M:%SZ'),
                 read=read,
-                case_id=case.id if i % 4 != 0 else None,  # Some notifications without case_id
+                case_id=case.id if i % 4 != 0 else None,
                 priority=priority,
-                link='/case-allocation' if i % 10 == 0 else None
+                link=f'/case/{case.id}' if i % 5 == 0 else None
             ))
         
         db.session.add_all(notifications)
-        
         db.session.commit()
-        print(f"Database seeded successfully!")
-        print(f"  - {len(users)} users")
-        print(f"  - {len(agencies)} agencies")
-        print(f"  - {len(customers)} customers")
-        print(f"  - {len(cases)} cases")
-        print(f"  - {len(events)} timeline events")
-        print(f"  - {len(notifications)} notifications")
+        print(f"  ✓ Created {len(notifications)} notifications")
+        
+        print("Creating Audit Logs...")
+        audit_logs = []
+        actions = [
+            'User Login', 'User Logout', 'Case Created', 'Case Updated', 'Case Assigned',
+            'Payment Recorded', 'Status Changed', 'Agency Assigned', 'Customer Updated',
+            'Report Generated', 'Settings Changed', 'User Created', 'Notification Sent'
+        ]
+        
+        # Generate 150 audit logs using Faker
+        for i in range(1, 151):
+            user = random.choice(users)
+            action = random.choice(actions)
+            timestamp = fake.date_time_between(start_date='-60d', end_date='now')
+            
+            # Generate relevant details based on action
+            if 'Case' in action:
+                case = random.choice(cases)
+                details = f"{action} - {case.id} ({case.customer_name})"
+            elif 'User' in action:
+                details = f"{action} - {user.name} ({user.email})"
+            elif 'Payment' in action:
+                case = random.choice(cases)
+                amount = random.randint(5000, 50000)
+                details = f"{action} - ${amount} for {case.id}"
+            else:
+                details = f"{action} - {fake.sentence()}"
+            
+            audit_logs.append(AuditLog(
+                timestamp=timestamp,
+                user_id=user.id,
+                action=action,
+                details=details
+            ))
+        
+        db.session.add_all(audit_logs)
+        db.session.commit()
+        print(f"  ✓ Created {len(audit_logs)} audit logs")
+        
+        print("\n" + "="*50)
+        print("Database seeded successfully!")
+        print("="*50)
+        print(f"  Users:           {len(users)}")
+        print(f"  Agencies:        {len(agencies)}")
+        print(f"  Customers:       {len(customers)}")
+        print(f"  Cases:           {len(cases)}")
+        print(f"  Timeline Events: {len(events)}")
+        print(f"  Notifications:   {len(notifications)}")
+        print(f"  Audit Logs:      {len(audit_logs)}")
+        print("="*50)
 
 if __name__ == '__main__':
     seed_data()

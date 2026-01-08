@@ -115,7 +115,8 @@ class TimelineEvent(db.Model):
     id = db.Column(db.String(50), primary_key=True)
     case_id = db.Column(db.String(50), db.ForeignKey('case.id'), nullable=False)
     timestamp = db.Column(db.String(30))
-    actor = db.Column(db.String(20)) # fedex, dca, customer
+    from_ = db.Column(db.String(20)) # fedex, dca, customer
+    to_ = db.Column(db.String(20)) # fedex, dca, customer
     event_type = db.Column(db.String(50)) # email, status_change, payment, call, legal_notice
     title = db.Column(db.String(100))
     description = db.Column(db.Text)
@@ -138,7 +139,8 @@ class TimelineEvent(db.Model):
         return {
             'id': self.id,
             'timestamp': self.timestamp,
-            'actor': self.actor,
+            'from': self.from_,
+            'to': self.to_,
             'eventType': self.event_type,
             'title': self.title,
             'description': self.description,

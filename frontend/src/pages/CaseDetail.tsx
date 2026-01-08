@@ -2,32 +2,28 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { mockCases, mockTimelineData } from '@/data/mockData'
-import { ArrowLeft, Mail, Phone, FileText, AlertCircle, Scale, User, ChevronDown, ChevronUp, ChevronRight, ChevronLeft, Building2, Calendar, DollarSign, ArrowUp, ArrowDown, MoveRight, Repeat, ArrowRight } from 'lucide-react'
+import { ArrowLeft, Mail, Phone, FileText, AlertCircle, Scale, User, ChevronDown, ChevronUp, ChevronRight, ChevronLeft, Building2, Calendar, DollarSign, ArrowUp, ArrowDown, MoveRight, Repeat, ArrowRight, Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { ConfirmationModal } from '@/components/ui/confirmation-modal'
 import { Modal } from '@/components/ui/modal'
 import { useUIStore } from '@/stores'
-import { caseService } from '@/services/caseService'
+import { caseService, type Case, type TimelineEvent } from '@/services/caseService'
 
 const eventIcons = {
   email: Mail,
   call: Phone,
   status_change: FileText,
-  payment: AlertCircle,
+  payment: DollarSign,
   legal_notice: Scale
-}
-
-const actorColors = {
-  fedex: { bg: 'bg-blue-50', border: 'border-blue-200', text: 'text-blue-700', label: 'FedEx' },
-  dca: { bg: 'bg-purple-50', border: 'border-purple-200', text: 'text-purple-700', label: 'DCA' },
-  customer: { bg: 'bg-green-50', border: 'border-green-200', text: 'text-green-700', label: 'Customer' }
 }
 
 export function CaseDetail() {
   const { caseId } = useParams()
   const navigate = useNavigate()
+  const [caseData, setCaseData] = useState<Case | null>(null)
+  const [timeline, setTimeline] = useState<TimelineEvent[]>([])
+  const [loading, setLoading] = useState(true)
   const [expandedEmails, setExpandedEmails] = useState<Set<string>>(new Set())
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc') // desc = newest first
@@ -37,18 +33,41 @@ export function CaseDetail() {
   const [eventForm, setEventForm] = useState({
     eventType: 'call',
     title: '',
-    actor: 'fedex',
-    recipient: 'customer',
+    from: '',
+    to: '',
     description: '',
     amount: '',
     timestamp: new Date().toISOString().slice(0, 16)
   })
-  
-  const caseData = mockCases.find(c => c.caseId === caseId)
-  const timelineRaw = mockTimelineData[caseId || ''] || []
+
+  // Fetch case data and timeline
+  useEffect(() => {
+    if (caseId) {
+      fetchCaseData()
+    }
+  }, [caseId])
+
+  const fetchCaseData = async () => {
+    if (!caseId) return
+    
+    try {
+      setLoading(true)
+      const [caseResponse, timelineResponse] = await Promise.all([
+        caseService.getCaseById(caseId),
+        caseService.getCaseTimeline(caseId)
+      ])
+      setCaseData(caseResponse)
+      setTimeline(timelineResponse)
+    } catch (error) {
+      console.error('Failed to fetch case data:', error)
+      showToast('Failed to load case data', 'error')
+    } finally {
+      setLoading(false)
+    }
+  }
   
   // Sort timeline based on current sort order
-  const timeline = [...timelineRaw].sort((a, b) => {
+  const sortedTimeline = [...timeline].sort((a, b) => {
     const dateA = new Date(a.timestamp).getTime()
     const dateB = new Date(b.timestamp).getTime()
     return sortOrder === 'desc' ? dateB - dateA : dateA - dateB
@@ -86,6 +105,11 @@ export function CaseDetail() {
       showToast('Please enter a title for the event', 'error')
       return
     }
+
+    if (!eventForm.from.trim() || !eventForm.to.trim()) {
+      showToast('Please enter both From and To fields', 'error')
+      return
+    }
     
     // Validate timestamp
     if (!eventForm.timestamp) {
@@ -113,7 +137,8 @@ export function CaseDetail() {
       const eventData: any = {
         eventType: eventForm.eventType,
         title: eventForm.title,
-        actor: eventForm.actor as 'fedex' | 'dca' | 'customer',
+        from: eventForm.from,
+        to: eventForm.to,
         description: eventForm.description,
         timestamp: new Date(eventForm.timestamp).toISOString()
       }
@@ -134,15 +159,15 @@ export function CaseDetail() {
       setEventForm({
         eventType: 'call',
         title: '',
-        actor: 'fedex',
-        recipient: 'customer',
+        from: '',
+        to: '',
         description: '',
         amount: '',
         timestamp: new Date().toISOString().slice(0, 16)
       })
       
       // Reload the page to show the new event
-      window.location.reload()
+      await fetchCaseData()
     } catch (error) {
       console.error('Error adding timeline event:', error)
       showToast('Failed to add timeline event', 'error')
@@ -151,17 +176,14 @@ export function CaseDetail() {
     }
   }
 
-  // Determine receiver based on actor and event type
-  const getReceiver = (actor: 'fedex' | 'dca' | 'customer', eventType: string) => {
-    if (eventType === 'status_change' || eventType === 'payment') {
-      return null // No specific receiver for these events
-    }
-    
-    // For communications (email, call, legal_notice)
-    if (actor === 'fedex') return 'customer'
-    if (actor === 'dca') return 'customer'
-    if (actor === 'customer') return caseData?.assignedAgency ? 'dca' : 'fedex'
-    return null
+  if (loading) {
+    return (
+      <div className="p-8">
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
+        </div>
+      </div>
+    )
   }
 
   if (!caseData) {
@@ -207,7 +229,7 @@ export function CaseDetail() {
         <div className="flex items-start justify-between">
           <div>
             <h1 className="text-3xl font-bold text-slate-900">{caseData.customerName}</h1>
-            <p className="text-slate-500 mt-1">Case ID: {caseData.caseId} • Account: {caseData.accountNumber}</p>
+            <p className="text-slate-500 mt-1">Case ID: {caseData.caseId} • Account: {caseData.customerId || 'N/A'}</p>
           </div>
           <div className="flex items-center gap-3">
             {caseData.assignedAgency && (
@@ -271,7 +293,7 @@ export function CaseDetail() {
               </div>
             </CardHeader>
             <CardContent>
-              {timeline.length === 0 ? (
+              {sortedTimeline.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-12 text-center">
                   <FileText className="h-12 w-12 text-slate-300 mb-4" />
                   <p className="text-slate-500">No timeline events available for this case</p>
@@ -283,31 +305,25 @@ export function CaseDetail() {
 
                   {/* Timeline events */}
                   <div className="space-y-6">
-                    {timeline.map((event) => {
+                    {sortedTimeline.map((event) => {
                       const Icon = eventIcons[event.eventType] || FileText
-                      const actorStyle = actorColors[event.actor]
                       const isEmail = event.eventType === 'email'
                       const isExpanded = expandedEmails.has(event.id)
-                      const receiver = getReceiver(event.actor, event.eventType)
-                      const receiverStyle = receiver ? actorColors[receiver as keyof typeof actorColors] : null
                       
                       return (
                         <div key={event.id} className="relative flex gap-4">
                           {/* Icon circle */}
                           <div className={cn(
                             "relative z-10 flex h-12 w-12 items-center justify-center rounded-full border-2 shrink-0",
-                            actorStyle.bg,
-                            actorStyle.border
+                            "bg-slate-50 border-slate-300"
                           )}>
-                            <Icon className={cn("h-5 w-5", actorStyle.text)} />
+                            <Icon className="h-5 w-5 text-slate-600" />
                           </div>
 
                           {/* Event content */}
                           <div className="flex-1 pb-6">
                             <div className={cn(
-                              "rounded-lg border-2 transition-all",
-                              actorStyle.border,
-                              "bg-white",
+                              "rounded-lg border-2 transition-all bg-white border-slate-200",
                               isEmail && "cursor-pointer hover:shadow-md"
                             )}
                             onClick={() => isEmail && toggleEmail(event.id)}
@@ -315,42 +331,25 @@ export function CaseDetail() {
                               <div className="p-4">
                                 <div className="flex items-start justify-between mb-2">
                                   <div className="flex-1">
-                                    <div className="flex items-center gap-2 mb-2 flex-wrap">
-                                      <div className="flex items-center gap-1.5">
-                                        <Badge 
-                                          variant="outline"
-                                          className={cn(
-                                            "text-xs",
-                                            actorStyle.text,
-                                            actorStyle.border
-                                          )}
-                                        >
-                                          <User className="h-3 w-3 mr-1" />
-                                          {actorStyle.label}
-                                        </Badge>
-                                        {receiver && receiverStyle && (
-                                          <>
-                                            <MoveRight className="h-3 w-3 text-slate-400" />
-                                            <Badge 
-                                              variant="outline"
-                                              className={cn(
-                                                "text-xs",
-                                                receiverStyle.text,
-                                                receiverStyle.border
-                                              )}
-                                            >
-                                              <User className="h-3 w-3 mr-1" />
-                                              {receiverStyle.label}
-                                            </Badge>
-                                          </>
-                                        )}
-                                      </div>
-                                      {isEmail && (
-                                        <Badge variant="secondary" className="text-xs">
-                                          <Mail className="h-3 w-3 mr-1" />
-                                          Email
-                                        </Badge>
+                                    <div className="flex items-center gap-3 mb-2 flex-wrap">
+                                      {/* From -> To badges */}
+                                      {event.from && event.to && (
+                                        <div className="flex items-center gap-2">
+                                          <Badge variant="outline" className="text-xs">
+                                            <User className="h-3 w-3 mr-1" />
+                                            {event.from}
+                                          </Badge>
+                                          <ArrowRight className="h-3 w-3 text-slate-400" />
+                                          <Badge variant="outline" className="text-xs">
+                                            <User className="h-3 w-3 mr-1" />
+                                            {event.to}
+                                          </Badge>
+                                        </div>
                                       )}
+                                      {/* Event type badge */}
+                                      <Badge variant="secondary" className="text-xs capitalize">
+                                        {event.eventType.replace('_', ' ')}
+                                      </Badge>
                                     </div>
                                     <h4 className="font-semibold text-slate-900 text-sm">
                                       {event.title}
@@ -474,7 +473,7 @@ export function CaseDetail() {
                     <p className="text-xs font-medium text-blue-900">Outstanding Amount</p>
                   </div>
                   <p className="text-2xl font-bold text-blue-900">
-                    {formatCurrency(caseData.amount)}
+                    {formatCurrency(caseData.invoiceAmount - caseData.recoveredAmount)}
                   </p>
                 </div>
                 
@@ -614,8 +613,8 @@ export function CaseDetail() {
           setEventForm({
             eventType: 'call',
             title: '',
-            actor: 'fedex',
-            recipient: 'customer',
+            from: '',
+            to: '',
             description: '',
             amount: '',
             timestamp: new Date().toISOString().slice(0, 16)
@@ -653,51 +652,33 @@ export function CaseDetail() {
             />
           </div>
 
-          {/* From/To Selector with Swap */}
-          {eventForm.eventType == 'call' && (
+          {/* From/To Fields */}
+          <div className="grid grid-cols-2 gap-4">
             <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">
-              Communication Flow
-            </label>
-            <div className="flex items-center gap-2">
-              <select
-                className="flex-1 px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                value={eventForm.actor}
-                onChange={(e) => setEventForm({ ...eventForm, actor: e.target.value })}
-              >
-                <option value="fedex">FedEx</option>
-                <option value="dca">DCA</option>
-                <option value="customer">Customer</option>
-              </select>
-              
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="shrink-0"
-                onClick={() => setEventForm({ 
-                  ...eventForm, 
-                  actor: eventForm.recipient, 
-                  recipient: eventForm.actor 
-                })}
-              >
-                <ArrowLeft className="h-4 w-4 mr-1" />
-                <ArrowRight className="h-4 w-4" />
-              </Button>
-              
-              <select
-                className="flex-1 px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                value={eventForm.recipient}
-                onChange={(e) => setEventForm({ ...eventForm, recipient: e.target.value })}
-              >
-                <option value="fedex">FedEx</option>
-                <option value="dca">DCA</option>
-                <option value="customer">Customer</option>
-              </select>
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                From *
+              </label>
+              <input
+                type="text"
+                className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="e.g., FedEx, DCA, Customer Name"
+                value={eventForm.from}
+                onChange={(e) => setEventForm({ ...eventForm, from: e.target.value })}
+              />
             </div>
-            <p className="text-xs text-slate-500 mt-1">From → To</p>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                To *
+              </label>
+              <input
+                type="text"
+                className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="e.g., FedEx, DCA, Customer Name"
+                value={eventForm.to}
+                onChange={(e) => setEventForm({ ...eventForm, to: e.target.value })}
+              />
+            </div>
           </div>
-          )}
 
           {/* Call specific fields */}
           {eventForm.eventType === 'call' && (
@@ -800,8 +781,8 @@ export function CaseDetail() {
                 setEventForm({
                   eventType: 'call',
                   title: '',
-                  actor: 'fedex',
-                  recipient: 'customer',
+                  from: '',
+                  to: '',
                   description: '',
                   amount: '',
                   timestamp: new Date().toISOString().slice(0, 16)
