@@ -151,26 +151,7 @@ export function AddAgency() {
                             </div>
                         </div>
 
-                        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
-                            <h3 className="font-semibold text-slate-900 mb-4 flex items-center gap-2">
-                                <CreditCard className="w-4 h-4 text-slate-500" />
-                                Commission Structure
-                            </h3>
-                            <div className="space-y-3">
-                                <div className="flex justify-between text-sm">
-                                    <span className="text-slate-500">Standard Rate</span>
-                                    <span className="font-medium">15%</span>
-                                </div>
-                                <div className="flex justify-between text-sm">
-                                    <span className="text-slate-500">Legal Action</span>
-                                    <span className="font-medium">25%</span>
-                                </div>
-                                <div className="pt-2 border-t border-slate-100 flex justify-between text-sm">
-                                    <span className="text-slate-900 font-medium">Projected ROI</span>
-                                    <span className="text-green-600 font-bold">+12%</span>
-                                </div>
-                            </div>
-                        </div>
+                        
                     </div>
                 </div>
             </div>
