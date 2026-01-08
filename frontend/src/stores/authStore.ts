@@ -1,45 +1,53 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
+import * as authService from '@/services/authService'
 
 export interface User {
   id: string
   name: string
   email: string
-  role: 'fedex' | 'dca'
+  role: 'fedex' | 'agency'
+  agencyId?: string
+  agencyName?: string
 }
 
 interface AuthState {
   user: User | null
+  token: string | null
   isAuthenticated: boolean
-  login: (role: 'fedex' | 'dca') => void
-  logout: () => void
-  switchRole: (role: 'fedex' | 'dca') => void
+  login: (email: string, password: string) => Promise<void>
+  logout: () => Promise<void>
 }
 
 export const useAuthStore = create<AuthState>()(
   persist(
     (set) => ({
       user: null,
+      token: null,
       isAuthenticated: false,
       
-      login: (role: 'fedex' | 'dca') => {
-        const user: User = role === 'fedex' 
-          ? { id: '1', name: 'John Smith', email: 'john@fedex.com', role: 'fedex' }
-          : { id: '2', name: 'Sarah Johnson', email: 'sarah@premier.com', role: 'dca' }
-        
-        set({ user, isAuthenticated: true })
+      login: async (email: string, password: string) => {
+        try {
+          const response = await authService.login({ email, password })
+          set({ 
+            user: response.user, 
+            token: response.token,
+            isAuthenticated: true 
+          })
+        } catch (error) {
+          console.error('Login failed:', error)
+          throw error
+        }
       },
       
-      logout: () => {
-        set({ user: null, isAuthenticated: false })
-      },
-      
-      switchRole: (role: 'fedex' | 'dca') => {
-        const user: User = role === 'fedex' 
-          ? { id: '1', name: 'John Smith', email: 'john@fedex.com', role: 'fedex' }
-          : { id: '2', name: 'Sarah Johnson', email: 'sarah@premier.com', role: 'dca' }
-        
-        set({ user })
+      logout: async () => {
+        try {
+          await authService.logout()
+        } catch (error) {
+          console.error('Logout error:', error)
+        } finally {
+          set({ user: null, token: null, isAuthenticated: false })
+        }
       }
     }),
     {

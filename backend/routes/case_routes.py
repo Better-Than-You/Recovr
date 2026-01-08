@@ -12,8 +12,13 @@ def get_cases():
     limit = request.args.get('limit', 10, type=int)
     search_query = request.args.get('search', '')
     status_filter = request.args.get('status')
+    agency_id = request.args.get('agency_id', None)  # Filter by agency
     
     query = Case.query
+    
+    # Filter by agency if specified (for agency employees)
+    if agency_id:
+        query = query.filter_by(assigned_agency_id=agency_id)
 
     if status_filter and status_filter != 'all':
         query = query.filter_by(status=status_filter)

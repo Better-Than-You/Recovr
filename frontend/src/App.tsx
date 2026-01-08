@@ -14,7 +14,31 @@ import { Agencies } from './pages/Agencies'
 import { AgencyDetail } from './pages/AgencyDetail'
 import { Customers } from './pages/Customers'
 import { CustomerDetail } from './pages/CustomerDetail'
+import { Unauthorized } from './pages/Unauthorized'
 import { Toast } from './components/Toast'
+
+// Route guard component for FedEx-only routes
+function FedExRoute({ children }: { children: React.ReactNode }) {
+  const { user } = useAuthStore()
+  
+  if (user?.role !== 'fedex') {
+    return <Unauthorized />
+  }
+  
+  return <>{children}</>
+}
+
+// Route guard component for Agency routes
+function AgencyRoute({ children }: { children: React.ReactNode }) {
+  const { user } = useAuthStore()
+  
+  // Only agency employees can access these routes
+  if (user?.role !== 'agency') {
+    return <Unauthorized />
+  }
+  
+  return <>{children}</>
+}
 
 function ProtectedRoutes() {
   const { isAuthenticated, user } = useAuthStore()
@@ -29,22 +53,88 @@ function ProtectedRoutes() {
     <Layout>
       <Routes>
         {/* FedEx Admin Routes */}
-        <Route path="/" element={role === 'fedex' ? <Dashboard /> : <Navigate to="/my-cases" />} />
-        <Route path="/case-allocation" element={<CaseAllocation />} />
-        <Route path="/agencies" element={<Agencies />} />
-        <Route path="/agency/:agencyId" element={<AgencyDetail />} />
-        <Route path="/agency-performance" element={<AgencyPerformance />} />
-        <Route path="/audit-logs" element={<AuditLogs />} />
+        <Route 
+          path="/" 
+          element={
+            <FedExRoute>
+              <Dashboard />
+            </FedExRoute>
+          } 
+        />
+        <Route 
+          path="/case-allocation" 
+          element={
+            <FedExRoute>
+              <CaseAllocation />
+            </FedExRoute>
+          } 
+        />
+        <Route 
+          path="/agencies" 
+          element={
+            <FedExRoute>
+              <Agencies />
+            </FedExRoute>
+          } 
+        />
+        <Route 
+          path="/agency/:agencyId" 
+          element={
+            <FedExRoute>
+              <AgencyDetail />
+            </FedExRoute>
+          } 
+        />
+        <Route 
+          path="/agency-performance" 
+          element={
+            <FedExRoute>
+              <AgencyPerformance />
+            </FedExRoute>
+          } 
+        />
+        <Route 
+          path="/audit-logs" 
+          element={
+            <FedExRoute>
+              <AuditLogs />
+            </FedExRoute>
+          } 
+        />
         
-        {/* DCA Agent Routes */}
-        <Route path="/my-cases" element={<MyCases />} />
-        <Route path="/pending-actions" element={<PendingActions />} />
-        <Route path="/recovery-stats" element={<RecoveryStats />} />
+        {/* Agency Employee Routes */}
+        <Route 
+          path="/my-cases" 
+          element={
+            <AgencyRoute>
+              <MyCases />
+            </AgencyRoute>
+          } 
+        />
+        <Route 
+          path="/pending-actions" 
+          element={
+            <AgencyRoute>
+              <PendingActions />
+            </AgencyRoute>
+          } 
+        />
+        <Route 
+          path="/recovery-stats" 
+          element={
+            <AgencyRoute>
+              <RecoveryStats />
+            </AgencyRoute>
+          } 
+        />
         
         {/* Shared Routes */}
         <Route path="/customers" element={<Customers />} />
         <Route path="/customer/:customerId" element={<CustomerDetail />} />
         <Route path="/case/:caseId" element={<CaseDetail />} />
+        
+        {/* Default redirect based on role */}
+        <Route path="*" element={<Navigate to={role === 'fedex' ? '/' : '/my-cases'} replace />} />
       </Routes>
     </Layout>
   )

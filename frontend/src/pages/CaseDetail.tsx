@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils'
 import { useState, useEffect } from 'react'
 import { ConfirmationModal } from '@/components/ui/confirmation-modal'
 import { Modal } from '@/components/ui/modal'
-import { useUIStore } from '@/stores'
+import { useUIStore, useAuthStore } from '@/stores'
 import { caseService, type Case, type TimelineEvent } from '@/services/caseService'
 
 const eventIcons = {
@@ -21,6 +21,7 @@ const eventIcons = {
 export function CaseDetail() {
   const { caseId } = useParams()
   const navigate = useNavigate()
+  const user = useAuthStore((state) => state.user)
   const [caseData, setCaseData] = useState<Case | null>(null)
   const [timeline, setTimeline] = useState<TimelineEvent[]>([])
   const [loading, setLoading] = useState(true)
@@ -232,7 +233,7 @@ export function CaseDetail() {
             <p className="text-slate-500 mt-1">Case ID: {caseData.caseId} • Account: {caseData.customerId || 'N/A'}</p>
           </div>
           <div className="flex items-center gap-3">
-            {caseData.assignedAgency && (
+            {caseData.assignedAgency && user?.role === 'fedex' && (
               <Button
                 variant="outline"
                 size="sm"
