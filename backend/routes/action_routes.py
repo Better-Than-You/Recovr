@@ -109,7 +109,24 @@ def print_json():
     try:
         data = request.get_json()
         print("Received JSON Data:")
-        print(data)
+        # Save to output.json
+        output_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'output.json')
+        with open(output_path, 'w') as f:
+            json.dump(data, f, indent=2)
+        invoice_id = data.get('invoiceId')
+        from_value = data.get('from')
+        to_value = data.get('to') if data.get('to') else 'fedex'
+        content = data.get('content')
+        
+        email_subject = content.get('subject') if content else 'No Subject'
+        email_body = content.get('body') if content else 'No Body'
+        
+        print(f"Invoice ID: {invoice_id}")
+        print(f"From: {from_value}")
+        print(f"To: {to_value}")
+        print(f"Email Subject: {email_subject}")
+        print(f"Email Body: {email_body}")
+        
         return jsonify({"message": "JSON received and printed"}), 200
     except Exception as e:
         print(f"Error printing JSON: {e}")
