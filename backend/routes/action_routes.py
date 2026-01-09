@@ -1,4 +1,5 @@
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, json, jsonify, request
+import requests
 from models import db, Case, Customer, TimelineEvent
 import os
 import csv
@@ -38,7 +39,7 @@ def get_pending_actions():
 
 @actions_bp.route('/upload', methods=['POST'])
 def upload_cases():
-    """Upload and process CSV/Excel file with case data"""
+    """Upload and process CSV file with case data"""
     if 'file' not in request.files:
         return jsonify({'error': 'No file part'}), 400
     
@@ -48,25 +49,16 @@ def upload_cases():
 
     # Validate file extension
     filename = secure_filename(file.filename or '')
-    if not filename.lower().endswith(('.csv', '.xlsx', '.xls')):
-        return jsonify({'error': 'Invalid file type. Please upload CSV or Excel file'}), 400
+    if not filename.lower().endswith('.csv'):
+        return jsonify({'error': 'Invalid file type. Please upload CSV file'}), 400
 
     try:
-        # Save file temporarily
-        base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        userdata_dir = os.path.join(base_dir, 'userdata')
+       # save csv in the backend
+        filepath = os.path.join('uploads', filename)
+        os.makedirs('uploads', exist_ok=True)
+        file.save(filepath)
         
-        if not os.path.exists(userdata_dir):
-            os.makedirs(userdata_dir)
-            
-        file_path = os.path.join(userdata_dir, filename)
-        file.save(file_path)
-        
-        response_message = f"Successfully received the file."
-            
-        return jsonify({
-            'message': response_message,
-        }), 200
+        return jsonify({'message': 'File received successfully'}), 200
         
     except Exception as e:
         db.session.rollback()
@@ -103,14 +95,116 @@ def update_timeline():
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
-
 @actions_bp.route('/print-json', methods=['POST'])
 def print_json():
+    def sanitize_json(input_str: str) -> dict:
+        """
+        Sanitize and parse JSON input string, removing potentially harmful content.
+
+        This function is designed to clean JSON input received from n8n workflows by:
+        1. Parsing the JSON string into a Python dictionary
+        2. Removing potentially harmful HTML script tags from string values within the 'content' field
+
+        Args:
+            input_str (str): A JSON-formatted string that needs to be sanitized and parsed.
+
+        Returns:
+            dict: A dictionary containing the sanitized JSON data. Returns an empty dictionary 
+                if the input string is not valid JSON.
+
+        Raises:
+            No exceptions are raised. JSON parsing errors are caught and handled by returning 
+            an empty dictionary.
+
+        Example:
+            >>> json_str = '{"content": {"message": "<script>alert(1)</script>Hello"}}'
+            >>> result = sanitize_json(json_str)
+            >>> print(result)
+            {'content': {'message': 'Hello'}}
+
+        Note:
+            - This is a basic sanitization approach that only removes <script> tags
+            - For production use, consider using more comprehensive sanitization libraries
+            - Only sanitizes string values within the 'content' dictionary key
+            - Non-string values in 'content' are left unchanged
+        """
+        import json
+        try:
+            data = json.loads(input_str)
+            # Basic sanitization: remove any script tags or potentially harmful content
+            if 'content' in data and isinstance(data['content'], dict):
+                for key in data['content']:
+                    if isinstance(data['content'][key], str):
+                        data['content'][key] = data['content'][key].replace('<script>', '').replace('</script>', '')
+            return data
+        except json.JSONDecodeError:
+            return {}
+
     try:
         data = request.get_json()
-        print("Received JSON Data:")
-        print(data)
-        return jsonify({"message": "JSON received and printed"}), 200
+        content = data['choices'][0]['message']['content']
+        data = sanitize_json(content)
+        
+        # create timeline event
+        event = TimelineEvent(
+            id=str(uuid.uuid4()),
+            case_id=data.get('invoiceId', 'unknown'),
+            timestamp=data.get('timestamp', datetime.now().isoformat()),
+            from_=data.get('from', 'unknown'),
+            to_=data.get('to', 'unknown'),
+            event_type='email',
+            title="Email Received From Customer",
+            description="No description provided",
+            meta_amount=data.get('amount', None),
+            meta_email_subject=data.get('content').get('subject'),
+            meta_email_content=data.get('content').get('body'),
+            meta_previous_status=data.get('previousStatus', None),
+            meta_new_status=data.get('newStatus', None)
+        )
+        
+        # CHANGE THIS WHEN YOU SERIOUSLY WANT TO ADD TIMELINE THROUGH EMAIL HOOK
+        add_event_toggle = True
+        if add_event_toggle:
+            try:
+                db.session.add(event)
+                db.session.commit()
+                return jsonify({'message': 'Timeline event created successfully', 'event': event.to_dict()}), 201
+            except Exception as e:
+                db.session.rollback()
+                return jsonify({'error': str(e)}), 500
+        
     except Exception as e:
         print(f"Error printing JSON: {e}")
         return jsonify({"error": "Failed to process JSON"}), 400
+    
+@actions_bp.route('/process_csv', methods=['GET'])
+def process_csv():
+    """Send the csv to n8n server to process it
+    
+    Output: 
+        JSON with list of cases objects returned from n8n
+    """
+    n8n_webhook_url = os.getenv('N8N_CSV_WEBHOOK_URL')
+    if not n8n_webhook_url:
+        return jsonify({'error': 'n8n webhook URL not configured'}), 500
+    try:
+        filepath = os.path.join('uploads', 'cases_upload.csv')
+        if not os.path.exists(filepath):
+            return jsonify({'error': 'CSV file not found on server'}), 404
+        
+        with open(filepath, 'rb') as f:
+            files = {'file': (os.path.basename(filepath), f, 'text/csv')}
+            response = requests.post(n8n_webhook_url, files=files)
+            
+            print(response.text)
+            
+            
+        if response.status_code == 200:
+            return jsonify({'message': 'CSV sent to n8n successfully'}), 200
+        else:
+            return jsonify({'error': f'n8n webhook returned status {response.status_code}'}), 500
+    except Exception as e:
+        return jsonify({'error': f'Failed to send CSV to n8n: {str(e)}'}), 500
+        
+    
+    
