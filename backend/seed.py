@@ -75,19 +75,28 @@ def seed_data():
         print("Creating Customers...")
         customers = []
         
+        account_types = ['Premium', 'Standard', 'Basic', 'Enterprise']
+        customer_tiers = ['Gold', 'Silver', 'Bronze', 'Platinum']
+        health_statuses = ['Excellent', 'Good', 'Fair', 'Poor', 'Critical']
+        service_types = ['Express Shipping', 'Freight', 'Ground Shipping', 'International', 'Same Day Delivery']
+        regions = ['Northeast', 'Southeast', 'Midwest', 'Southwest', 'West', 'Pacific Northwest']
+        
         # Generate 150 customers using Faker
         for i in range(1, 151):
+            due_date = (fake.date_between(start_date='-90d', end_date='+30d')).strftime('%Y-%m-%d')
             customers.append(Customer(
                 id=f'CUST-{i:03d}',
-                name=fake.company(),
-                email=fake.company_email(),
-                phone=fake.phone_number(),
-                address=fake.street_address(),
-                city=fake.city(),
-                state=fake.state_abbr(),
-                zip_code=fake.zipcode(),
-                payment_history=random.choice(['excellent', 'good', 'fair', 'poor']),
-                last_contact=(fake.date_between(start_date='-90d', end_date='today')).strftime('%Y-%m-%d')
+                account_number=f'ACC-{random.randint(10000, 99999)}',
+                customer_name=fake.company(),
+                account_type=random.choice(account_types),
+                customer_tier=random.choice(customer_tiers),
+                historical_health=random.choice(health_statuses),
+                invoice_number=f'INV-{random.randint(100000, 999999)}',
+                due_date=due_date,
+                amount_due=round(random.uniform(1000, 50000), 2),
+                service_type=random.choice(service_types),
+                region=random.choice(regions),
+                customer_email=fake.company_email()
             ))
         db.session.add_all(customers)
         db.session.commit()
@@ -146,7 +155,7 @@ def seed_data():
             
             cases.append(Case(
                 id=f'CS-2024-{i:04d}',
-                customer_name=customer.name,
+                customer_name=customer.customer_name,
                 customer_id=customer.id,
                 invoice_amount=invoice_amount,
                 recovered_amount=recovered_amount,

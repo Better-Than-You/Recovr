@@ -42,10 +42,10 @@ export function Customers() {
   const filteredCustomers = useMemo(() => {
     return customers.filter(customer => {
       const matchesSearch = 
-        customer.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (customer.email || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (customer.company || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (customer.phone || '').toLowerCase().includes(searchQuery.toLowerCase())
+        customer.customerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (customer.customerEmail || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (customer.accountNumber || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (customer.region || '').toLowerCase().includes(searchQuery.toLowerCase())
       
       return matchesSearch
     })
@@ -86,7 +86,7 @@ export function Customers() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
             <input
               type="text"
-              placeholder="Search by name, email, city, or state..."
+              placeholder="Search by name, email, account number, or region..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-10 pr-10 py-2 rounded-lg border border-slate-200 bg-white focus:border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-200 text-sm"
@@ -124,12 +124,12 @@ export function Customers() {
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium text-slate-500">
-              Total Outstanding
+              Total Amount Due
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-red-600">
-              {formatCurrency(customers.reduce((sum, c) => sum + (c.total_owed || 0), 0))}
+              {formatCurrency(customers.reduce((sum, c) => sum + (c.amountDue || 0), 0))}
             </div>
           </CardContent>
         </Card>
@@ -137,12 +137,12 @@ export function Customers() {
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium text-slate-500">
-              Average Debt
+              Average Amount Due
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-slate-900">
-              {customers.length > 0 ? formatCurrency(customers.reduce((sum, c) => sum + (c.total_owed || 0), 0) / customers.length) : '$0'}
+              {customers.length > 0 ? formatCurrency(customers.reduce((sum, c) => sum + (c.amountDue || 0), 0) / customers.length) : '$0'}
             </div>
           </CardContent>
         </Card>
@@ -150,12 +150,12 @@ export function Customers() {
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium text-slate-500">
-              With Active Cases
+              With Outstanding Invoices
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-emerald-600">
-              {customers.filter(c => (c.total_owed || 0) > 0).length}
+              {customers.filter(c => (c.amountDue || 0) > 0).length}
             </div>
           </CardContent>
         </Card>
@@ -195,26 +195,26 @@ export function Customers() {
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-2">
                         <h3 className="text-lg font-semibold text-slate-900">
-                          {customer.name}
+                          {customer.customerName}
                         </h3>
-                        {customer.email && (
+                        {customer.customerEmail && (
                           <span className="text-sm text-slate-500">
-                            {customer.email}
+                            {customer.customerEmail}
                           </span>
                         )}
                         <span className="text-xs text-slate-400 font-mono">
-                          {customer.id}
+                          {customer.accountNumber}
                         </span>
                       </div>
                       
                       <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 mt-4">
-                        {(customer.address || customer.company) && (
+                        {customer.region && (
                           <div className="flex items-center gap-2">
                             <MapPin className="h-4 w-4 text-slate-400" />
                             <div>
-                              <p className="text-xs text-slate-500">Location</p>
+                              <p className="text-xs text-slate-500">Region</p>
                               <p className="text-sm font-medium text-slate-900">
-                                {customer.address || customer.company || 'N/A'}
+                                {customer.region}
                               </p>
                             </div>
                           </div>
@@ -223,32 +223,32 @@ export function Customers() {
                         <div className="flex items-center gap-2">
                           <DollarSign className="h-4 w-4 text-slate-400" />
                           <div>
-                            <p className="text-xs text-slate-500">Total Owed</p>
+                            <p className="text-xs text-slate-500">Amount Due</p>
                             <p className="text-sm font-semibold text-red-600">
-                              {formatCurrency(customer.total_owed || 0)}
+                              {formatCurrency(customer.amountDue || 0)}
                             </p>
                           </div>
                         </div>
                         
-                        {customer.phone && (
+                        {customer.accountType && (
                           <div className="flex items-center gap-2">
-                            <Phone className="h-4 w-4 text-slate-400" />
+                            <Briefcase className="h-4 w-4 text-slate-400" />
                             <div>
-                              <p className="text-xs text-slate-500">Phone</p>
+                              <p className="text-xs text-slate-500">Account Type</p>
                               <p className="text-sm font-medium text-slate-900">
-                                {customer.phone}
+                                {customer.accountType}
                               </p>
                             </div>
                           </div>
                         )}
                         
-                        {customer.company && (
+                        {customer.customerTier && (
                           <div className="flex items-center gap-2">
-                            <Briefcase className="h-4 w-4 text-slate-400" />
+                            <User className="h-4 w-4 text-slate-400" />
                             <div>
-                              <p className="text-xs text-slate-500">Company</p>
+                              <p className="text-xs text-slate-500">Tier</p>
                               <p className="text-sm font-medium text-slate-900">
-                                {customer.company}
+                                {customer.customerTier}
                               </p>
                             </div>
                           </div>

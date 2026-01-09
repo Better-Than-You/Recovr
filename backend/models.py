@@ -48,31 +48,34 @@ class Agency(db.Model):
 
 class Customer(db.Model):
     id = db.Column(db.String(50), primary_key=True)
-    name = db.Column(db.String(100), nullable=False)
-    email = db.Column(db.String(120), nullable=False)
-    phone = db.Column(db.String(20))
-    address = db.Column(db.String(200))
-    city = db.Column(db.String(100))
-    state = db.Column(db.String(50))
-    zip_code = db.Column(db.String(20))
-    payment_history = db.Column(db.String(20)) # excellent, good, fair, poor
-    last_contact = db.Column(db.String(20))
+    account_number = db.Column(db.String(50), nullable=False)
+    customer_name = db.Column(db.String(100), nullable=False)
+    account_type = db.Column(db.String(50))
+    customer_tier = db.Column(db.String(50))
+    historical_health = db.Column(db.String(50))
+    invoice_number = db.Column(db.String(50))
+    due_date = db.Column(db.String(20))
+    amount_due = db.Column(db.Float)
+    service_type = db.Column(db.String(100))
+    region = db.Column(db.String(100))
+    customer_email = db.Column(db.String(120))
     
     cases = db.relationship('Case', backref='customer_rel', lazy=True)
 
     def to_dict(self):
         return {
             'id': self.id,
-            'name': self.name,
-            'email': self.email,
-            'phone': self.phone,
-            'address': self.address,
-            'city': self.city,
-            'state': self.state,
-            'zip': self.zip_code,
-            'activeCases': len([c for c in self.cases if c.status not in ['resolved']]),
-            'paymentHistory': self.payment_history,
-            'lastContact': self.last_contact
+            'accountNumber': self.account_number,
+            'customerName': self.customer_name,
+            'accountType': self.account_type,
+            'customerTier': self.customer_tier,
+            'historicalHealth': self.historical_health,
+            'invoiceNumber': self.invoice_number,
+            'dueDate': self.due_date,
+            'amountDue': self.amount_due,
+            'serviceType': self.service_type,
+            'region': self.region,
+            'customerEmail': self.customer_email
         }
 
 class Case(db.Model):

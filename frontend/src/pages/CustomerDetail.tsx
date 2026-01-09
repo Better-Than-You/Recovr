@@ -2,7 +2,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { ArrowLeft, User, DollarSign, Briefcase, Mail, Phone, MapPin, Calendar, ChevronRight } from 'lucide-react'
+import { ArrowLeft, User, DollarSign, Briefcase, Mail, MapPin, Calendar, ChevronRight } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { customerService, type Customer } from '@/services/customerService'
 import { type Case } from '@/services/caseService'
@@ -68,18 +68,6 @@ export function CustomerDetail() {
     }).format(value)
   }
 
-  const getPaymentHistoryBadge = (history?: string) => {
-    const map = {
-      excellent: { variant: 'default' as const, label: 'Excellent' },
-      good: { variant: 'secondary' as const, label: 'Good' },
-      fair: { variant: 'medium' as const, label: 'Fair' },
-      poor: { variant: 'destructive' as const, label: 'Poor' }
-    }
-    return map[history as keyof typeof map] || map['fair']
-  }
-
-  const historyBadge = getPaymentHistoryBadge(customer.paymentHistory)
-
   return (
     <div className="p-8">
       {/* Header */}
@@ -99,15 +87,22 @@ export function CustomerDetail() {
             <User className="h-8 w-8 text-slate-600" />
           </div>
           <div className="flex-1">
-            <h1 className="text-3xl font-bold text-slate-900">{customer.name}</h1>
-            <p className="text-slate-500 mt-1">{customer.id}</p>
+            <h1 className="text-3xl font-bold text-slate-900">{customer.customerName}</h1>
+            <p className="text-slate-500 mt-1">{customer.accountNumber}</p>
           </div>
-          <Badge 
-            variant={historyBadge.variant}
-            className="text-base px-4 py-2"
-          >
-            {historyBadge.label} Payment History
-          </Badge>
+          {customer.historicalHealth && (
+            <Badge 
+              variant={
+                customer.historicalHealth === 'Excellent' ? 'default' :
+                customer.historicalHealth === 'Good' ? 'secondary' :
+                customer.historicalHealth === 'Fair' ? 'medium' :
+                'destructive'
+              }
+              className="text-base px-4 py-2"
+            >
+              {customer.historicalHealth} Health
+            </Badge>
+          )}
         </div>
       </div>
 
@@ -124,20 +119,44 @@ export function CustomerDetail() {
                 <div>
                   <div className="flex items-center gap-2 mb-2">
                     <DollarSign className="h-5 w-5 text-red-600" />
-                    <p className="text-sm text-slate-500">Total Outstanding</p>
+                    <p className="text-sm text-slate-500">Amount Due</p>
                   </div>
                   <p className="text-2xl font-bold text-red-600">
-                    {formatCurrency(customer.total_owed || 0)}
+                    {formatCurrency(customer.amountDue || 0)}
                   </p>
                 </div>
                 
                 <div>
                   <div className="flex items-center gap-2 mb-2">
                     <Briefcase className="h-5 w-5 text-purple-600" />
-                    <p className="text-sm text-slate-500">Active Cases</p>
+                    <p className="text-sm text-slate-500">Invoice Number</p>
                   </div>
-                  <p className="text-2xl font-bold text-slate-900">
-                    {customer.activeCases || 0}
+                  <p className="text-lg font-mono text-slate-900">
+                    {customer.invoiceNumber || 'N/A'}
+                  </p>
+                </div>
+
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <Calendar className="h-5 w-5 text-orange-600" />
+                    <p className="text-sm text-slate-500">Due Date</p>
+                  </div>
+                  <p className="text-base font-medium text-slate-900">
+                    {customer.dueDate ? new Date(customer.dueDate).toLocaleDateString('en-US', {
+                      month: 'short',
+                      day: 'numeric',
+                      year: 'numeric'
+                    }) : 'N/A'}
+                  </p>
+                </div>
+
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <User className="h-5 w-5 text-blue-600" />
+                    <p className="text-sm text-slate-500">Customer Tier</p>
+                  </div>
+                  <p className="text-base font-semibold text-slate-900">
+                    {customer.customerTier || 'N/A'}
                   </p>
                 </div>
               </div>
@@ -207,7 +226,7 @@ export function CustomerDetail() {
         <div>
           <Card>
             <CardHeader>
-              <CardTitle>Contact Information</CardTitle>
+              <CardTitle>Account Information</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
@@ -216,48 +235,39 @@ export function CustomerDetail() {
                   <p className="text-xs font-medium text-slate-500">Email</p>
                 </div>
                 <p className="text-sm font-medium text-slate-900 pl-6">
-                  {customer.email}
+                  {customer.customerEmail || 'N/A'}
                 </p>
               </div>
 
               <div>
                 <div className="flex items-center gap-2 mb-2">
-                  <Phone className="h-4 w-4 text-slate-400" />
-                  <p className="text-xs font-medium text-slate-500">Phone</p>
+                  <Briefcase className="h-4 w-4 text-slate-400" />
+                  <p className="text-xs font-medium text-slate-500">Account Type</p>
                 </div>
                 <p className="text-sm font-medium text-slate-900 pl-6">
-                  {customer.phone}
+                  {customer.accountType || 'N/A'}
                 </p>
               </div>
 
               <div>
                 <div className="flex items-center gap-2 mb-2">
                   <MapPin className="h-4 w-4 text-slate-400" />
-                  <p className="text-xs font-medium text-slate-500">Address</p>
+                  <p className="text-xs font-medium text-slate-500">Region</p>
                 </div>
-                <div className="text-sm font-medium text-slate-900 pl-6">
-                  {customer.address && <p>{customer.address}</p>}
-                  {(customer.city || customer.state || customer.zip) && (
-                    <p>{customer.city}{customer.city && customer.state ? ', ' : ''}{customer.state} {customer.zip}</p>
-                  )}
-                </div>
+                <p className="text-sm font-medium text-slate-900 pl-6">
+                  {customer.region || 'N/A'}
+                </p>
               </div>
 
-              {customer.lastContact && (
-                <div className="pt-4 border-t border-slate-200">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Calendar className="h-4 w-4 text-slate-400" />
-                    <p className="text-xs font-medium text-slate-500">Last Contact</p>
-                  </div>
-                  <p className="text-sm font-medium text-slate-900 pl-6">
-                    {new Date(customer.lastContact).toLocaleDateString('en-US', {
-                      month: 'long',
-                      day: 'numeric',
-                      year: 'numeric'
-                    })}
-                  </p>
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <User className="h-4 w-4 text-slate-400" />
+                  <p className="text-xs font-medium text-slate-500">Service Type</p>
                 </div>
-              )}
+                <p className="text-sm font-medium text-slate-900 pl-6">
+                  {customer.serviceType || 'N/A'}
+                </p>
+              </div>
 
               <div className="pt-4 space-y-2">
                 <Button className="w-full">
@@ -265,8 +275,7 @@ export function CustomerDetail() {
                   Send Email
                 </Button>
                 <Button variant="outline" className="w-full">
-                  <Phone className="h-4 w-4 mr-2" />
-                  Call Customer
+                  View Invoice
                 </Button>
               </div>
             </CardContent>

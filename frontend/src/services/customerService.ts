@@ -4,18 +4,17 @@ import type { Case } from './caseService';
 // Types
 export interface Customer {
   id: string;
-  name: string;
-  email?: string;
-  phone?: string;
-  address?: string;
-  city?: string;
-  state?: string;
-  zip?: string;
-  activeCases?: number;
-  paymentHistory?: string;
-  lastContact?: string;
-  total_owed?: number; // Added by customers list endpoint
-  company?: string; // Legacy field
+  accountNumber: string;
+  customerName: string;
+  accountType?: string;
+  customerTier?: string;
+  historicalHealth?: string;
+  invoiceNumber?: string;
+  dueDate?: string;
+  amountDue?: number;
+  serviceType?: string;
+  region?: string;
+  customerEmail?: string;
 }
 
 export interface CustomersResponse {
