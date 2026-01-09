@@ -2,15 +2,55 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { customers, mockCases } from '@/data/mockData'
 import { ArrowLeft, User, DollarSign, Briefcase, Mail, Phone, MapPin, Calendar, ChevronRight } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { customerService, type Customer } from '@/services/customerService'
+import { type Case } from '@/services/caseService'
+import { useUIStore } from '@/stores'
 
 export function CustomerDetail() {
   const { customerId } = useParams()
   const navigate = useNavigate()
-  
-  const customer = customers.find(c => c.id === customerId)
-  const customerCases = mockCases.filter(c => c.customerName === customer?.name)
+  const showToast = useUIStore((state) => state.showToast)
+  const [loading, setLoading] = useState(true)
+  const [customer, setCustomer] = useState<Customer | null>(null)
+  const [customerCases, setCustomerCases] = useState<Case[]>([])
+
+  useEffect(() => {
+    if (customerId) {
+      fetchCustomerData()
+    }
+  }, [customerId])
+
+  const fetchCustomerData = async () => {
+    if (!customerId) return
+    
+    try {
+      setLoading(true)
+      const [customerData, casesData] = await Promise.all([
+        customerService.getCustomerById(customerId),
+        customerService.getCustomerCases(customerId)
+      ])
+      setCustomer(customerData)
+      setCustomerCases(casesData)
+    } catch (error) {
+      console.error('Failed to fetch customer data:', error)
+      showToast('Failed to load customer data', 'error')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="p-8 flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-slate-600">Loading customer details...</p>
+        </div>
+      </div>
+    )
+  }
 
   if (!customer) {
     return (
@@ -28,14 +68,14 @@ export function CustomerDetail() {
     }).format(value)
   }
 
-  const getPaymentHistoryBadge = (history: string) => {
+  const getPaymentHistoryBadge = (history?: string) => {
     const map = {
       excellent: { variant: 'default' as const, label: 'Excellent' },
       good: { variant: 'secondary' as const, label: 'Good' },
       fair: { variant: 'medium' as const, label: 'Fair' },
       poor: { variant: 'destructive' as const, label: 'Poor' }
     }
-    return map[history as keyof typeof map]
+    return map[history as keyof typeof map] || map['fair']
   }
 
   const historyBadge = getPaymentHistoryBadge(customer.paymentHistory)
@@ -87,7 +127,7 @@ export function CustomerDetail() {
                     <p className="text-sm text-slate-500">Total Outstanding</p>
                   </div>
                   <p className="text-2xl font-bold text-red-600">
-                    {formatCurrency(customer.totalOwed)}
+                    {formatCurrency(customer.total_owed || 0)}
                   </p>
                 </div>
                 
@@ -97,7 +137,7 @@ export function CustomerDetail() {
                     <p className="text-sm text-slate-500">Active Cases</p>
                   </div>
                   <p className="text-2xl font-bold text-slate-900">
-                    {customer.activeCases}
+                    {customer.activeCases || 0}
                   </p>
                 </div>
               </div>
@@ -116,14 +156,14 @@ export function CustomerDetail() {
                 ) : (
                   customerCases.map((caseItem) => (
                     <div
-                      key={caseItem.caseId}
+                      key={caseItem.id}
                       className="flex items-center justify-between p-4 rounded-lg border border-slate-200 hover:border-slate-300 hover:shadow-sm transition-all cursor-pointer"
-                      onClick={() => navigate(`/case/${caseItem.caseId}`)}
+                      onClick={() => navigate(`/case/${caseItem.id}`)}
                     >
                       <div className="flex-1">
                         <div className="flex items-center gap-3 mb-1">
                           <span className="font-mono text-sm text-slate-600">
-                            {caseItem.caseId}
+                            {caseItem.caseId || caseItem.id}
                           </span>
                           <Badge 
                             variant={
@@ -140,11 +180,11 @@ export function CustomerDetail() {
                         <div className="flex items-center gap-4 mt-2">
                           <div>
                             <p className="text-xs text-slate-500">Amount</p>
-                            <p className="text-sm font-semibold text-slate-900">{formatCurrency(caseItem.amount)}</p>
+                            <p className="text-sm font-semibold text-slate-900">{formatCurrency(caseItem.invoiceAmount || 0)}</p>
                           </div>
                           <div>
                             <p className="text-xs text-slate-500">Aging</p>
-                            <p className="text-sm font-medium text-slate-900">{caseItem.agingDays} days</p>
+                            <p className="text-sm font-medium text-slate-900">{caseItem.agingDays || 0} days</p>
                           </div>
                           {caseItem.assignedAgency && (
                             <div>
@@ -196,24 +236,28 @@ export function CustomerDetail() {
                   <p className="text-xs font-medium text-slate-500">Address</p>
                 </div>
                 <div className="text-sm font-medium text-slate-900 pl-6">
-                  <p>{customer.address}</p>
-                  <p>{customer.city}, {customer.state} {customer.zip}</p>
+                  {customer.address && <p>{customer.address}</p>}
+                  {(customer.city || customer.state || customer.zip) && (
+                    <p>{customer.city}{customer.city && customer.state ? ', ' : ''}{customer.state} {customer.zip}</p>
+                  )}
                 </div>
               </div>
 
-              <div className="pt-4 border-t border-slate-200">
-                <div className="flex items-center gap-2 mb-2">
-                  <Calendar className="h-4 w-4 text-slate-400" />
-                  <p className="text-xs font-medium text-slate-500">Last Contact</p>
+              {customer.lastContact && (
+                <div className="pt-4 border-t border-slate-200">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Calendar className="h-4 w-4 text-slate-400" />
+                    <p className="text-xs font-medium text-slate-500">Last Contact</p>
+                  </div>
+                  <p className="text-sm font-medium text-slate-900 pl-6">
+                    {new Date(customer.lastContact).toLocaleDateString('en-US', {
+                      month: 'long',
+                      day: 'numeric',
+                      year: 'numeric'
+                    })}
+                  </p>
                 </div>
-                <p className="text-sm font-medium text-slate-900 pl-6">
-                  {new Date(customer.lastContact).toLocaleDateString('en-US', {
-                    month: 'long',
-                    day: 'numeric',
-                    year: 'numeric'
-                  })}
-                </p>
-              </div>
+              )}
 
               <div className="pt-4 space-y-2">
                 <Button className="w-full">

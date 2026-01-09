@@ -1,17 +1,22 @@
 import { useState, Fragment } from 'react'
-import { Bell, Search, Settings, HelpCircle, User } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { Bell, Search, Settings, HelpCircle, User, LogOut } from 'lucide-react'
 import { Button } from './ui/button'
 import { Badge } from './ui/badge'
 import { NotificationModal } from './NotificationModal'
 import { mockNotifications, type Notification } from '@/data/mockData'
+import { useAuthStore } from '@/stores'
 
-type Role = 'fedex' | 'dca'
+type Role = 'fedex' | 'agency'
 
 interface NavbarProps {
   currentRole: Role
 }
 
 export function Navbar({ currentRole }: NavbarProps) {
+  const navigate = useNavigate()
+  const user = useAuthStore(state => state.user)
+  const logout = useAuthStore(state => state.logout)
   const [isNotificationOpen, setIsNotificationOpen] = useState(false)
   const [notifications, setNotifications] = useState<Notification[]>(mockNotifications)
 
@@ -78,18 +83,40 @@ export function Navbar({ currentRole }: NavbarProps) {
           <div className="h-6 w-px bg-slate-200 mx-1" />
 
           {/* Role Badge */}
-          <Badge 
-            variant={currentRole === 'fedex' ? 'default' : 'secondary'}
-            className="hidden sm:flex px-4 py-1.5 text-sm"
-          >
-            {currentRole === 'fedex' ? 'FedEx Admin' : 'DCA Agent'}
-          </Badge>
+          {user && (
+            <Badge 
+              variant={user.role === 'fedex' ? 'default' : 'secondary'}
+              className="hidden sm:flex px-4 py-1.5 text-sm"
+            >
+              {user.role === 'fedex' ? 'FedEx Admin' : 'Agency Employee'}
+            </Badge>
+          )}
 
           {/* User Profile */}
           <Button variant="ghost" size="icon" className="h-10 w-10">
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-200">
-              <User className="h-4 w-4 text-slate-700" />
+              {user ? (
+                <span className="text-xs font-medium text-slate-700">
+                  {user.name.split(' ').map(n => n[0]).join('')}
+                </span>
+              ) : (
+                <User className="h-4 w-4 text-slate-700" />
+              )}
             </div>
+          </Button>
+
+          {/* Logout Button */}
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={async () => {
+              await logout()
+              navigate('/login')
+            }}
+            className="ml-2"
+          >
+            <LogOut className="h-4 w-4 mr-2" />
+            Logout
           </Button>
         </div>
       </div>

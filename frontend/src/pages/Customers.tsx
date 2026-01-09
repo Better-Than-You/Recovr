@@ -4,10 +4,11 @@ import { Button } from '@/components/ui/button'
 import { User, MapPin, Phone, ChevronRight, DollarSign, Briefcase, Search, X } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { customerService, type Customer } from '@/services/customerService'
-import { useUIStore } from '@/stores'
+import { useAuthStore, useUIStore } from '@/stores'
 
 export function Customers() {
   const navigate = useNavigate()
+  const user = useAuthStore((state) => state.user)
   const showToast = useUIStore((state) => state.showToast)
   const [loading, setLoading] = useState(true)
   const [customers, setCustomers] = useState<Customer[]>([])
@@ -20,7 +21,14 @@ export function Customers() {
   const fetchCustomers = async () => {
     try {
       setLoading(true)
-      const response = await customerService.getCustomers({ limit: 100 })
+      // For agency employees, pass their agency_id to filter customers
+      const params: any = { limit: 100 }
+      
+      if (user?.role === 'agency' && user?.agencyId) {
+        params.agency_id = user.agencyId
+      }
+      
+      const response = await customerService.getCustomers(params)
       setCustomers(response.customers)
     } catch (error) {
       console.error('Error fetching customers:', error)

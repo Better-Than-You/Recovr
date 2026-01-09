@@ -12,8 +12,13 @@ def get_cases():
     limit = request.args.get('limit', 10, type=int)
     search_query = request.args.get('search', '')
     status_filter = request.args.get('status')
+    agency_id = request.args.get('agency_id', None)  # Filter by agency
     
     query = Case.query
+    
+    # Filter by agency if specified (for agency employees)
+    if agency_id:
+        query = query.filter_by(assigned_agency_id=agency_id)
 
     if status_filter and status_filter != 'all':
         query = query.filter_by(status=status_filter)
@@ -38,7 +43,17 @@ def get_case(case_id):
     case = Case.query.get(case_id)
     if not case:
         return jsonify({'error': 'Case not found'}), 404
-    return jsonify(case.to_dict())
+    
+    # Get the latest timeline event for last contact
+    latest_event = TimelineEvent.query.filter_by(case_id=case_id)\
+        .order_by(TimelineEvent.timestamp.desc())\
+        .first()
+    
+    # Build custom response object
+    case_data = case.to_dict()
+    case_data['lastContact'] = latest_event.timestamp if latest_event else None
+    
+    return jsonify(case_data)
 
 @cases_bp.route('', methods=['POST'])
 def create_case():

@@ -5,17 +5,20 @@ export interface Case {
   id: string;
   customerName: string;
   customerId: string;
-  amount: number;
-  agingDays: number;
-  recoveredAmount: number;
-  recoveryProbability: number;
+  amount?: number; // legacy
   invoiceAmount: number;
+  recoveredAmount: number;
+  agingDays: number;
+  recoveryProbability: number;
   status: string;
-  assignedAgency_id?: string;
+  assignedAgencyId?: string;
   assignedAgencyReason?: string;
-  customer_id?: string;
-  created_at: string;
   assignedAgency?: string;
+  accountNumber?: string;
+  dueDate?: string;
+  lastContact?: string;
+  createdAt: string;
+  autoAssignAfterHours?: number;
   caseId?: string;
 }
 

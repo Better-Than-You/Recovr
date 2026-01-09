@@ -7,9 +7,15 @@ export interface Customer {
   name: string;
   email?: string;
   phone?: string;
-  total_owed?: number;
-  company?: string;
   address?: string;
+  city?: string;
+  state?: string;
+  zip?: string;
+  activeCases?: number;
+  paymentHistory?: string;
+  lastContact?: string;
+  total_owed?: number; // Added by customers list endpoint
+  company?: string; // Legacy field
 }
 
 export interface CustomersResponse {
