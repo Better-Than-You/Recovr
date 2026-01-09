@@ -14,13 +14,10 @@ def seed_data():
         db.create_all()
         
         print("Creating Users...")
-        users = [
-            User(id='u1', name='Admin User', email='admin@fedex.com', role='admin', password_hash='hashed_password'),
-            User(id='u2', name='FedEx Manager', email='manager@fedex.com', role='fedex', password_hash='hashed_password'),
-        ]
+        users = []
         
         # Generate 100+ users using Faker
-        for i in range(3, 153):
+        for i in range(1,20):
             role = random.choice(['fedex', 'dca', 'admin'])
             domain = 'fedex.com' if role == 'fedex' else ('admin.com' if role == 'admin' else fake.domain_name())
             users.append(User(
@@ -42,11 +39,11 @@ def seed_data():
         agency_suffixes = ['Recovery Solutions', 'Collection Agency', 'Recovery Associates', 'Collections Inc',
                           'Debt Recovery', 'Financial Services', 'Recovery Group', 'Collection Services',
                           'Asset Recovery', 'Credit Solutions', 'Recovery Partners', 'Collection Experts']
+        regions = ['Northeast', 'Southeast', 'Midwest', 'Southwest', 'West', 'Pacific Northwest']
         
-        # Generate 100+ agencies using Faker
         used_names = {'Premier Recovery Solutions', 'Elite Collection Agency', 'Rapid Recovery Associates'}
         agencies = []
-        for i in range(151):
+        for i in range(1, 11):
             while True:
                 prefix = random.choice(agency_prefixes)
                 suffix = random.choice(agency_suffixes)
@@ -66,6 +63,7 @@ def seed_data():
                 current_capacity=0,
                 email=fake.company_email(),
                 phone=fake.phone_number(),
+                region=random.choice(regions),
                 summary=fake.catch_phrase() + '. ' + fake.bs().capitalize() + '.'
             ))
         db.session.add_all(agencies)
@@ -81,8 +79,7 @@ def seed_data():
         service_types = ['Express Shipping', 'Freight', 'Ground Shipping', 'International', 'Same Day Delivery']
         regions = ['Northeast', 'Southeast', 'Midwest', 'Southwest', 'West', 'Pacific Northwest']
         
-        # Generate 150 customers using Faker
-        for i in range(1, 151):
+        for i in range(1, 21):
             due_date = (fake.date_between(start_date='-90d', end_date='+30d')).strftime('%Y-%m-%d')
             customers.append(Customer(
                 id=f'CUST-{i:03d}',
@@ -107,7 +104,7 @@ def seed_data():
         cases = []
         
         # Generate 150 cases using Faker
-        for i in range(1, 151):
+        for i in range(1, 41):
             customer = random.choice(customers)
             agency_id = random.choice([a.id for a in agencies]) if i % 7 != 0 else None
             status = random.choice(statuses) if agency_id else 'pending'
@@ -145,7 +142,7 @@ def seed_data():
                     f"Agency has highest performance score of {random.randint(85, 95)}% for similar cases",
                     f"Specialized in {random.choice(['commercial', 'retail', 'industrial'])} debt recovery",
                     "Agency has established relationship with customer's industry",
-                    f"Geographic proximity to customer location ({customer.city}, {customer.state})",
+                    f"Geographic proximity to customer location ({customer.region})",
                     "Agency has proven track record with accounts over $50K",
                     "Recommended based on case complexity and recovery probability"
                 ]
@@ -278,7 +275,7 @@ def seed_data():
         notifications = []
         
         # Generate 120 notifications using Faker
-        for i in range(1, 121):
+        for i in range(1, 21):
             notif_type = random.choice(notification_types)
             case = random.choice(cases)
             priority = random.choice(['high', 'medium', 'low'])
@@ -322,7 +319,7 @@ def seed_data():
         ]
         
         # Generate 150 audit logs using Faker
-        for i in range(1, 151):
+        for i in range(1, 101):
             user = random.choice(users)
             action = random.choice(actions)
             timestamp = fake.date_time_between(start_date='-60d', end_date='now')

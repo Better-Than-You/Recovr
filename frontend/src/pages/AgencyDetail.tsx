@@ -268,10 +268,10 @@ export function AgencyDetail() {
               <div>
                 <div className="flex items-center gap-2 mb-2">
                   <MapPin className="h-4 w-4 text-slate-400" />
-                  <p className="text-xs font-medium text-slate-500">Location</p>
+                  <p className="text-xs font-medium text-slate-500">Region</p>
                 </div>
                 <p className="text-sm font-medium text-slate-900 pl-6">
-                  New York, NY
+                  {agency.region || 'N/A'}
                 </p>
               </div>
 

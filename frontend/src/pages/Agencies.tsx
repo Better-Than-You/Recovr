@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Building2, TrendingUp, Briefcase, ChevronRight, DollarSign, Search, Filter, X } from 'lucide-react'
+import { Building2, TrendingUp, Briefcase, ChevronRight, DollarSign, Search, Filter, X, MapPin } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { agencyService, type Agency } from '@/services/agencyService'
 import { useUIStore } from '@/stores'
@@ -223,6 +223,12 @@ export function Agencies() {
                       >
                         {((agency.performanceScore || 0) * 100).toFixed(0)}% Performance
                       </Badge>
+                      {agency.region && (
+                        <span className="text-xs text-slate-500 flex items-center gap-1">
+                          <MapPin className="h-3 w-3" />
+                          {agency.region}
+                        </span>
+                      )}
                     </div>
                     
                     <div className="grid grid-cols-3 gap-6 mt-4">

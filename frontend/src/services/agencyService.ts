@@ -9,6 +9,7 @@ export interface Agency {
   currentCapacity: number;
   email?: string;
   phone?: string;
+  region?: string;
   performanceScore?: number;
   activeOutstandingAmount?: number;
   summary?: string;

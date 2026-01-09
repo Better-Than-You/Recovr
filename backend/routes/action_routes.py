@@ -177,34 +177,6 @@ def print_json():
         print(f"Error printing JSON: {e}")
         return jsonify({"error": "Failed to process JSON"}), 400
     
-@actions_bp.route('/process_csv', methods=['GET'])
-def process_csv():
-    """Send the csv to n8n server to process it
-    
-    Output: 
-        JSON with list of cases objects returned from n8n
-    """
-    n8n_webhook_url = os.getenv('N8N_CSV_WEBHOOK_URL')
-    if not n8n_webhook_url:
-        return jsonify({'error': 'n8n webhook URL not configured'}), 500
-    try:
-        filepath = os.path.join('uploads', 'cases_upload.csv')
-        if not os.path.exists(filepath):
-            return jsonify({'error': 'CSV file not found on server'}), 404
-        
-        with open(filepath, 'rb') as f:
-            files = {'file': (os.path.basename(filepath), f, 'text/csv')}
-            response = requests.post(n8n_webhook_url, files=files)
-            
-            print(response.text)
-            
-            
-        if response.status_code == 200:
-            return jsonify({'message': 'CSV sent to n8n successfully'}), 200
-        else:
-            return jsonify({'error': f'n8n webhook returned status {response.status_code}'}), 500
-    except Exception as e:
-        return jsonify({'error': f'Failed to send CSV to n8n: {str(e)}'}), 500
         
     
     

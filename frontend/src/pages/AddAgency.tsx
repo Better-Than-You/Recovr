@@ -93,10 +93,12 @@ export function AddAgency() {
                                         <div className="space-y-2">
                                             <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Operating Region</label>
                                             <select className="w-full px-4 py-3 rounded-lg bg-slate-50 border border-slate-200 outline-none text-slate-600">
-                                                <option>North America (All)</option>
-                                                <option>East Coast</option>
-                                                <option>West Coast</option>
+                                                <option>Northeast</option>
+                                                <option>Southeast</option>
                                                 <option>Midwest</option>
+                                                <option>Southwest</option>
+                                                <option>West</option>
+                                                <option>Pacific Northwest</option>
                                             </select>
                                         </div>
                                         <div className="space-y-2">
