@@ -156,7 +156,7 @@ export function Agencies() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-blue-600">
-              {formatCurrency(agencies.reduce((sum, a) => sum + (a.activeOutstandingAmount || a.active_outstanding_amount || 0), 0))}
+              {formatCurrency(agencies.reduce((sum, a) => sum + (a.activeOutstandingAmount || 0), 0))}
             </div>
           </CardContent>
         </Card>
@@ -164,12 +164,12 @@ export function Agencies() {
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium text-slate-500">
-              Active Cases
+              Total Capacity
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-slate-900">
-              {agencies.reduce((sum, a) => sum + (a.activeCases || a.active_cases || 0), 0)}
+              {agencies.reduce((sum, a) => sum + (a.currentCapacity || 0), 0)} / {agencies.reduce((sum, a) => sum + (a.capacity || 0), 0)}
             </div>
           </CardContent>
         </Card>
@@ -217,7 +217,7 @@ export function Agencies() {
                       <Badge 
                         variant={
                           (agency.performanceScore || 0) >= 0.9 ? 'default' :
-                          (agency.performanceScore || 0) >= 0.8 ? 'secondary' :
+                          (agency.performanceScore || 0) >= 0.7 ? 'secondary' :
                           'outline'
                         }
                       >
@@ -231,7 +231,7 @@ export function Agencies() {
                         <div>
                           <p className="text-xs text-slate-500">Active Outstanding</p>
                           <p className="text-sm font-semibold text-slate-900">
-                            {formatCurrency(agency.activeOutstandingAmount || agency.active_outstanding_amount || 0)}
+                            {formatCurrency(agency.activeOutstandingAmount || 0)}
                           </p>
                         </div>
                       </div>
@@ -239,9 +239,9 @@ export function Agencies() {
                       <div className="flex items-center gap-2">
                         <Briefcase className="h-4 w-4 text-slate-400" />
                         <div>
-                          <p className="text-xs text-slate-500">Active Cases</p>
+                          <p className="text-xs text-slate-500">Capacity Utilization</p>
                           <p className="text-sm font-semibold text-slate-900">
-                            {agency.activeCases || agency.active_cases || 0}
+                            {agency.currentCapacity || 0} / {agency.capacity || 0}
                           </p>
                         </div>
                       </div>

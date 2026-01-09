@@ -43,8 +43,7 @@ class Agency(db.Model):
             'currentCapacity': self.current_capacity,
             'email': self.email,
             'phone': self.phone,
-            'summary': self.summary,
-            'activeCases': len([c for c in self.cases if c.status not in ['resolved', 'legal']])
+            'summary': self.summary
         }
 
 class Customer(db.Model):

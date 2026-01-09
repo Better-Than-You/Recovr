@@ -112,7 +112,7 @@ export function AgencyDetail() {
               <CardTitle>Performance Overview</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-3 gap-6">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                 <div>
                   <div className="flex items-center gap-2 mb-2">
                     <DollarSign className="h-5 w-5 text-blue-600" />
@@ -129,7 +129,17 @@ export function AgencyDetail() {
                     <p className="text-sm text-slate-500">Active Cases</p>
                   </div>
                   <p className="text-2xl font-bold text-slate-900">
-                    {agency.activeCases || 0}
+                    {agency.currentCapacity || 0}
+                  </p>
+                </div>
+                
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <Briefcase className="h-5 w-5 text-amber-600" />
+                    <p className="text-sm text-slate-500">Max Capacity</p>
+                  </div>
+                  <p className="text-2xl font-bold text-slate-900">
+                    {agency.capacity || 0}
                   </p>
                 </div>
                 
@@ -141,6 +151,34 @@ export function AgencyDetail() {
                   <p className="text-2xl font-bold text-emerald-600">
                     {((agency.performanceScore || 0) * 100).toFixed(0)}%
                   </p>
+                </div>
+              </div>
+              
+              {/* Capacity Utilization Bar */}
+              <div className="mt-6">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-sm font-medium text-slate-700">Capacity Utilization</p>
+                  <p className="text-sm text-slate-600">
+                    {agency.capacity ? Math.round(((agency.currentCapacity || 0) / agency.capacity) * 100) : 0}%
+                  </p>
+                </div>
+                <div className="w-full bg-slate-100 rounded-full h-3 overflow-hidden">
+                  <div 
+                    className={`h-full transition-all rounded-full ${
+                      (agency.capacity && ((agency.currentCapacity || 0) / agency.capacity) >= 0.9) 
+                        ? 'bg-red-500' 
+                        : (agency.capacity && ((agency.currentCapacity || 0) / agency.capacity) >= 0.7) 
+                        ? 'bg-amber-500' 
+                        : 'bg-emerald-500'
+                    }`}
+                    style={{ 
+                      width: `${agency.capacity ? Math.min(((agency.currentCapacity || 0) / agency.capacity) * 100, 100) : 0}%` 
+                    }}
+                  />
+                </div>
+                <div className="flex items-center justify-between mt-2 text-xs text-slate-500">
+                  <span>0</span>
+                  <span>{agency.capacity || 0} cases</span>
                 </div>
               </div>
             </CardContent>

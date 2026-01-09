@@ -100,12 +100,13 @@ export function AddAgency() {
                                             </select>
                                         </div>
                                         <div className="space-y-2">
-                                            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Case Capacity</label>
-                                            <select className="w-full px-4 py-3 rounded-lg bg-slate-50 border border-slate-200 outline-none text-slate-600">
-                                                <option>Up to 1,000 cases/mo</option>
-                                                <option>1,000 - 5,000 cases/mo</option>
-                                                <option>5,000+ cases/mo</option>
-                                            </select>
+                                            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Max Case Capacity</label>
+                                            <input
+                                                type="number"
+                                                min="1"
+                                                placeholder="e.g. 150"
+                                                className="w-full px-4 py-3 rounded-lg bg-slate-50 border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition-all outline-none"
+                                            />
                                         </div>
                                     </div>
                                 </form>

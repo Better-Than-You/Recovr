@@ -43,39 +43,10 @@ def seed_data():
                           'Debt Recovery', 'Financial Services', 'Recovery Group', 'Collection Services',
                           'Asset Recovery', 'Credit Solutions', 'Recovery Partners', 'Collection Experts']
         
-        agencies = [
-            Agency(
-                id='prs', 
-                name='Premier Recovery Solutions', 
-                performance_score=0.87, 
-                active_outstanding_amount=2345000, 
-                email='contact@premier.com', 
-                phone='+1 (555) 100-0001',
-                summary='Leading debt collection agency with over 15 years of experience in commercial recovery.'
-            ),
-            Agency(
-                id='eca', 
-                name='Elite Collection Agency', 
-                performance_score=0.92, 
-                active_outstanding_amount=3120000, 
-                email='contact@elite.com', 
-                phone='+1 (555) 100-0002',
-                summary='Top-rated agency specializing in high-value accounts and international collections.'
-            ),
-            Agency(
-                id='rra', 
-                name='Rapid Recovery Associates', 
-                performance_score=0.79, 
-                active_outstanding_amount=1890000, 
-                email='contact@rapid.com', 
-                phone='+1 (555) 100-0003',
-                summary='Fast-track collection services with focus on quick resolution and customer satisfaction.'
-            ),
-        ]
-        
         # Generate 100+ agencies using Faker
         used_names = {'Premier Recovery Solutions', 'Elite Collection Agency', 'Rapid Recovery Associates'}
-        for i in range(4, 153):
+        agencies = []
+        for i in range(151):
             while True:
                 prefix = random.choice(agency_prefixes)
                 suffix = random.choice(agency_suffixes)
@@ -85,11 +56,14 @@ def seed_data():
                     break
             
             agency_id = f'agn{i:03d}'
+            capacity = random.choice([50, 100, 150, 200, 250, 300])
             agencies.append(Agency(
                 id=agency_id,
                 name=name,
                 performance_score=round(random.uniform(0.65, 0.98), 2),
                 active_outstanding_amount=random.randint(500000, 5000000),
+                capacity=capacity,
+                current_capacity=0,
                 email=fake.company_email(),
                 phone=fake.phone_number(),
                 summary=fake.catch_phrase() + '. ' + fake.bs().capitalize() + '.'
@@ -190,6 +164,14 @@ def seed_data():
         db.session.add_all(cases)
         db.session.commit()
         print(f"  ✓ Created {len(cases)} cases")
+        
+        # Update agency current_capacity based on active cases
+        print("Updating agency capacities...")
+        for agency in agencies:
+            active_cases_count = len([c for c in cases if c.assigned_agency_id == agency.id and c.status not in ['resolved', 'legal']])
+            agency.current_capacity = active_cases_count
+        db.session.commit()
+        print(f"  ✓ Updated agency capacities")
         
         print("Creating Timeline Events...")
         event_types = ['email', 'status_change', 'payment', 'call', 'legal_notice']
