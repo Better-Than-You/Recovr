@@ -2,15 +2,55 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { agencies, mockCases } from '@/data/mockData'
 import { ArrowLeft, Building2, DollarSign, Briefcase, TrendingUp, Mail, Phone, MapPin, ChevronRight } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { agencyService, type Agency } from '@/services/agencyService'
+import { type Case } from '@/services/caseService'
+import { useUIStore } from '@/stores'
 
 export function AgencyDetail() {
   const { agencyId } = useParams()
   const navigate = useNavigate()
-  
-  const agency = agencies.find(a => a.id === agencyId)
-  const agencyCases = mockCases.filter(c => c.assignedAgency === agency?.name)
+  const showToast = useUIStore((state) => state.showToast)
+  const [loading, setLoading] = useState(true)
+  const [agency, setAgency] = useState<Agency | null>(null)
+  const [agencyCases, setAgencyCases] = useState<Case[]>([])
+
+  useEffect(() => {
+    if (agencyId) {
+      fetchAgencyData()
+    }
+  }, [agencyId])
+
+  const fetchAgencyData = async () => {
+    if (!agencyId) return
+    
+    try {
+      setLoading(true)
+      const [agencyData, casesData] = await Promise.all([
+        agencyService.getAgencyById(agencyId),
+        agencyService.getAgencyCases(agencyId)
+      ])
+      setAgency(agencyData)
+      setAgencyCases(casesData)
+    } catch (error) {
+      console.error('Failed to fetch agency data:', error)
+      showToast('Failed to load agency data', 'error')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="p-8 flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-slate-600">Loading agency details...</p>
+        </div>
+      </div>
+    )
+  }
 
   if (!agency) {
     return (
@@ -52,13 +92,13 @@ export function AgencyDetail() {
           </div>
           <Badge 
             variant={
-              agency.performanceScore >= 0.9 ? 'default' :
-              agency.performanceScore >= 0.8 ? 'secondary' :
+              (agency.performanceScore || 0) >= 0.9 ? 'default' :
+              (agency.performanceScore || 0) >= 0.8 ? 'secondary' :
               'outline'
             }
             className="text-base px-4 py-2"
           >
-            {(agency.performanceScore * 100).toFixed(0)}% Performance
+            {((agency.performanceScore || 0) * 100).toFixed(0)}% Performance
           </Badge>
         </div>
       </div>
@@ -72,14 +112,14 @@ export function AgencyDetail() {
               <CardTitle>Performance Overview</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-3 gap-6">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                 <div>
                   <div className="flex items-center gap-2 mb-2">
                     <DollarSign className="h-5 w-5 text-blue-600" />
                     <p className="text-sm text-slate-500">Active Outstanding</p>
                   </div>
                   <p className="text-2xl font-bold text-slate-900">
-                    {formatCurrency(agency.activeOutstandingAmount)}
+                    {formatCurrency(agency.activeOutstandingAmount || 0)}
                   </p>
                 </div>
                 
@@ -89,7 +129,17 @@ export function AgencyDetail() {
                     <p className="text-sm text-slate-500">Active Cases</p>
                   </div>
                   <p className="text-2xl font-bold text-slate-900">
-                    {agency.activeCases}
+                    {agency.currentCapacity || 0}
+                  </p>
+                </div>
+                
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <Briefcase className="h-5 w-5 text-amber-600" />
+                    <p className="text-sm text-slate-500">Max Capacity</p>
+                  </div>
+                  <p className="text-2xl font-bold text-slate-900">
+                    {agency.capacity || 0}
                   </p>
                 </div>
                 
@@ -99,8 +149,36 @@ export function AgencyDetail() {
                     <p className="text-sm text-slate-500">Success Rate</p>
                   </div>
                   <p className="text-2xl font-bold text-emerald-600">
-                    {(agency.performanceScore * 100).toFixed(0)}%
+                    {((agency.performanceScore || 0) * 100).toFixed(0)}%
                   </p>
+                </div>
+              </div>
+              
+              {/* Capacity Utilization Bar */}
+              <div className="mt-6">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-sm font-medium text-slate-700">Capacity Utilization</p>
+                  <p className="text-sm text-slate-600">
+                    {agency.capacity ? Math.round(((agency.currentCapacity || 0) / agency.capacity) * 100) : 0}%
+                  </p>
+                </div>
+                <div className="w-full bg-slate-100 rounded-full h-3 overflow-hidden">
+                  <div 
+                    className={`h-full transition-all rounded-full ${
+                      (agency.capacity && ((agency.currentCapacity || 0) / agency.capacity) >= 0.9) 
+                        ? 'bg-red-500' 
+                        : (agency.capacity && ((agency.currentCapacity || 0) / agency.capacity) >= 0.7) 
+                        ? 'bg-amber-500' 
+                        : 'bg-emerald-500'
+                    }`}
+                    style={{ 
+                      width: `${agency.capacity ? Math.min(((agency.currentCapacity || 0) / agency.capacity) * 100, 100) : 0}%` 
+                    }}
+                  />
+                </div>
+                <div className="flex items-center justify-between mt-2 text-xs text-slate-500">
+                  <span>0</span>
+                  <span>{agency.capacity || 0} cases</span>
                 </div>
               </div>
             </CardContent>
@@ -118,14 +196,14 @@ export function AgencyDetail() {
                 ) : (
                   agencyCases.map((caseItem) => (
                     <div
-                      key={caseItem.caseId}
+                      key={caseItem.id}
                       className="flex items-center justify-between p-4 rounded-lg border border-slate-200 hover:border-slate-300 hover:shadow-sm transition-all cursor-pointer"
-                      onClick={() => navigate(`/case/${caseItem.caseId}`)}
+                      onClick={() => navigate(`/case/${caseItem.id}`)}
                     >
                       <div className="flex-1">
                         <div className="flex items-center gap-3 mb-1">
                           <span className="font-mono text-sm text-slate-600">
-                            {caseItem.caseId}
+                            {caseItem.caseId || caseItem.id}
                           </span>
                           <Badge 
                             variant={
@@ -139,7 +217,7 @@ export function AgencyDetail() {
                           </Badge>
                         </div>
                         <p className="font-medium text-slate-900">{caseItem.customerName}</p>
-                        <p className="text-sm text-slate-600">{formatCurrency(caseItem.amount)}</p>
+                        <p className="text-sm text-slate-600">{formatCurrency(caseItem.invoiceAmount || 0)}</p>
                       </div>
                       <ChevronRight className="h-5 w-5 text-slate-400" />
                     </div>
@@ -173,7 +251,7 @@ export function AgencyDetail() {
                   <p className="text-xs font-medium text-slate-500">Contact Email</p>
                 </div>
                 <p className="text-sm font-medium text-slate-900 pl-6">
-                  contact@{agency.id}.com
+                  {agency.email || `contact@${agency.id}.com`}
                 </p>
               </div>
 
@@ -183,17 +261,17 @@ export function AgencyDetail() {
                   <p className="text-xs font-medium text-slate-500">Phone</p>
                 </div>
                 <p className="text-sm font-medium text-slate-900 pl-6">
-                  +1 (555) 123-4567
+                  {agency.phone || '+1 (555) 123-4567'}
                 </p>
               </div>
 
               <div>
                 <div className="flex items-center gap-2 mb-2">
                   <MapPin className="h-4 w-4 text-slate-400" />
-                  <p className="text-xs font-medium text-slate-500">Location</p>
+                  <p className="text-xs font-medium text-slate-500">Region</p>
                 </div>
                 <p className="text-sm font-medium text-slate-900 pl-6">
-                  New York, NY
+                  {agency.region || 'N/A'}
                 </p>
               </div>
 

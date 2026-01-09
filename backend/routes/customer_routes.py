@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, g
 from models import db, Customer, Case
 
 customers_bp = Blueprint('customers', __name__)
@@ -8,26 +8,31 @@ def get_customers():
     page = request.args.get('page', 1, type=int)
     limit = request.args.get('limit', 10, type=int)
     search = request.args.get('search', '')
+    agency_id = request.args.get('agency_id', None)  # Filter by agency
     
-    # join this with cases and add the total_owed column
-    query = db.session.query(Customer, Case.invoice_amount.label("total_owed")).join(
-        Case, Customer.id == Case.customer_id
-    )
+    # Base query
+    query = Customer.query
+    
+    # Filter by agency if specified (for agency employees)
+    if agency_id:
+        # Get customers who have cases assigned to this agency
+        query = query.join(Case, Customer.id == Case.customer_id).filter(
+            Case.assigned_agency_id == agency_id
+        ).distinct()
 
     if search:
-        query = query.filter(Customer.name.ilike(f'%{search}%'))
+        query = query.filter(
+            db.or_(
+                Customer.customer_name.ilike(f'%{search}%'),
+                Customer.customer_email.ilike(f'%{search}%'),
+                Customer.account_number.ilike(f'%{search}%')
+            )
+        )
         
     pagination = query.paginate(page=page, per_page=limit, error_out=False)
 
-    # 2. Map the results to merge the column into the dictionary
-    customer_list = []
-    for customer_obj, total_owed in pagination.items:
-        data = customer_obj.to_dict()
-        data['total_owed'] = total_owed  # Inject the new column
-        customer_list.append(data)
-
     return jsonify({
-        'customers': customer_list,
+        'customers': [c.to_dict() for c in pagination.items],
         'total': pagination.total,
         'pages': pagination.pages,
         'current_page': page

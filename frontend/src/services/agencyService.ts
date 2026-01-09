@@ -5,16 +5,14 @@ import type { Case } from './caseService';
 export interface Agency {
   id: string;
   name: string;
-  active_cases: number;
-  active_outstanding_amount: number;
-  success_rate: number;
-  contact_email?: string;
-  contact_phone?: string;
+  capacity: number;
+  currentCapacity: number;
+  email?: string;
+  phone?: string;
+  region?: string;
   performanceScore?: number;
-  activeCases?: number;
-  recoveredAmount?: number;
-  successRate?: number;
   activeOutstandingAmount?: number;
+  summary?: string;
 }
 
 // Agency Services

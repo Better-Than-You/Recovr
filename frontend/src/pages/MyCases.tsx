@@ -22,12 +22,14 @@ export function MyCases() {
   const fetchMyCases = async () => {
     try {
       setLoading(true)
-      // For DCA role, filter cases assigned to their agency
-      // For now, we'll get cases with status 'assigned' or 'in_progress'
-      const response = await caseService.getCases({ 
-        status: user?.role === 'dca' ? 'assigned' : 'all',
-        limit: 100 
-      })
+      // For agency role, filter cases by their agency ID
+      const params: any = { limit: 100 }
+      
+      if (user?.role === 'agency' && user?.agencyId) {
+        params.agency_id = user.agencyId
+      }
+      
+      const response = await caseService.getCases(params)
       setMyCases(response.cases)
     } catch (error) {
       console.error('Error fetching cases:', error)
@@ -46,8 +48,9 @@ export function MyCases() {
   }
 
   const totalAssigned = myCases.length
-  const totalAmount = myCases.reduce((sum, c) => sum + c.amount, 0)
-  const urgentCases = myCases.filter(c => c.aging_days > 120).length
+  const totalAmount = myCases.reduce((sum, c) => sum + (c.invoiceAmount || 0), 0)
+  const recoveredAmount = myCases.reduce((sum, c) => sum + (c.recoveredAmount || 0), 0)
+  const urgentCases = myCases.filter(c => (c.agingDays || 0) > 120).length
 
   if (loading) {
     return (
@@ -137,23 +140,23 @@ export function MyCases() {
                   </TableCell>
                   <TableCell>
                     <div>
-                      <p className="font-medium text-slate-900">{caseItem.customer_name}</p>
-                      <p className="text-xs text-slate-500">{caseItem.customer_id || 'N/A'}</p>
+                      <p className="font-medium text-slate-900">{caseItem.customerName}</p>
+                      <p className="text-xs text-slate-500">{caseItem.customerId || 'N/A'}</p>
                     </div>
                   </TableCell>
                   <TableCell className="font-semibold">
-                    {formatCurrency(caseItem.amount)}
+                    {formatCurrency(caseItem.invoiceAmount || 0)}
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
                       <span className={
-                        caseItem.aging_days > 120 ? 'text-red-600 font-semibold' :
-                        caseItem.aging_days > 90 ? 'text-orange-600 font-medium' :
+                        (caseItem.agingDays || 0) > 120 ? 'text-red-600 font-semibold' :
+                        (caseItem.agingDays || 0) > 90 ? 'text-orange-600 font-medium' :
                         'text-slate-600'
                       }>
-                        {caseItem.aging_days}
+                        {caseItem.agingDays || 0}
                       </span>
-                      {caseItem.aging_days > 120 && (
+                      {(caseItem.agingDays || 0) > 120 && (
                         <Clock className="h-4 w-4 text-red-500" />
                       )}
                     </div>
@@ -170,10 +173,10 @@ export function MyCases() {
                     </Badge>
                   </TableCell>
                   <TableCell className="text-sm text-slate-600">
-                    {new Date(caseItem.created_at).toLocaleDateString('en-US', {
+                    {caseItem.createdAt ? new Date(caseItem.createdAt).toLocaleDateString('en-US', {
                       month: 'short',
                       day: 'numeric'
-                    })}
+                    }) : 'N/A'}
                   </TableCell>
                   <TableCell className="text-right">
                     <Button

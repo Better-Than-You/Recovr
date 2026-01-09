@@ -7,7 +7,7 @@ import { TrendingUp, TrendingDown } from 'lucide-react'
 const performanceData = agencies.map(agency => ({
   name: agency.name.split(' ')[0], // Shortened name for chart
   active_outstanding: agency.activeOutstandingAmount / 1000, // in thousands
-  cases: agency.activeCases,
+  cases: agency.currentCapacity,
   score: agency.performanceScore * 100
 }))
 
@@ -76,7 +76,7 @@ export function AgencyPerformance() {
                 <div>
                   <CardTitle className="text-lg">{agency.name}</CardTitle>
                   <CardDescription className="mt-1">
-                    {agency.activeCases} active cases
+                    {agency.currentCapacity || 0}/{agency.capacity || 0} capacity
                   </CardDescription>
                 </div>
                 <Badge 
@@ -100,15 +100,15 @@ export function AgencyPerformance() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <p className="text-sm text-slate-500">Active Cases</p>
+                  <p className="text-sm text-slate-500">Capacity</p>
                   <p className="text-xl font-semibold text-slate-900 mt-1">
-                    {agency.activeCases}
+                    {agency.currentCapacity || 0} / {agency.capacity || 0}
                   </p>
                 </div>
                 <div>
-                  <p className="text-sm text-slate-500">Avg per Case</p>
+                  <p className="text-sm text-slate-500">Utilization</p>
                   <p className="text-xl font-semibold text-slate-900 mt-1">
-                    {formatCurrency(agency.activeOutstandingAmount / agency.activeCases)}
+                    {agency.capacity ? Math.round(((agency.currentCapacity || 0) / agency.capacity) * 100) : 0}%
                   </p>
                 </div>
               </div>

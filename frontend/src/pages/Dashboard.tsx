@@ -553,7 +553,7 @@ export function Dashboard() {
                 <div className="flex-1">
                   <p className="text-sm font-medium text-slate-900">{agency.name}</p>
                   <p className="text-xs text-slate-500">
-                    {agency.active_cases || 0} active cases
+                    Capacity: {agency.currentCapacity || 0} / {agency.capacity || 0}
                   </p>
                 </div>
                 <div className="text-right">

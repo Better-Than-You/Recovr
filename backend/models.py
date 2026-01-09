@@ -23,9 +23,13 @@ class Agency(db.Model):
     name = db.Column(db.String(100), nullable=False)
     performance_score = db.Column(db.Float)
     active_outstanding_amount = db.Column(db.Float)
+    capacity = db.Column(db.Integer)  # max number of active cases
+    current_capacity = db.Column(db.Integer)  # current number of active cases
     email = db.Column(db.String(120))
     phone = db.Column(db.String(20))
+    region = db.Column(db.String(100))
     summary = db.Column(db.String(600), nullable=True, default=None)
+    password_hash = db.Column(db.String(128), nullable=True)  # For agency employee login
     
     # Relationship with cases
     cases = db.relationship('Case', backref='agency', lazy=True)
@@ -36,39 +40,44 @@ class Agency(db.Model):
             'name': self.name,
             'performanceScore': self.performance_score,
             'activeOutstandingAmount': self.active_outstanding_amount,
+            'capacity': self.capacity,
+            'currentCapacity': self.current_capacity,
             'email': self.email,
             'phone': self.phone,
-            'summary': self.summary,
-            'activeCases': len([c for c in self.cases if c.status not in ['resolved', 'legal']])
+            'region': self.region,
+            'summary': self.summary
         }
 
 class Customer(db.Model):
     id = db.Column(db.String(50), primary_key=True)
-    name = db.Column(db.String(100), nullable=False)
-    email = db.Column(db.String(120), nullable=False)
-    phone = db.Column(db.String(20))
-    address = db.Column(db.String(200))
-    city = db.Column(db.String(100))
-    state = db.Column(db.String(50))
-    zip_code = db.Column(db.String(20))
-    payment_history = db.Column(db.String(20)) # excellent, good, fair, poor
-    last_contact = db.Column(db.String(20))
+    account_number = db.Column(db.String(50), nullable=False)
+    customer_name = db.Column(db.String(100), nullable=False)
+    account_type = db.Column(db.String(50))
+    customer_tier = db.Column(db.String(50))
+    historical_health = db.Column(db.String(50))
+    invoice_number = db.Column(db.String(50))
+    due_date = db.Column(db.String(20))
+    amount_due = db.Column(db.Float)
+    service_type = db.Column(db.String(100))
+    region = db.Column(db.String(100))
+    customer_email = db.Column(db.String(120))
     
     cases = db.relationship('Case', backref='customer_rel', lazy=True)
 
     def to_dict(self):
         return {
             'id': self.id,
-            'name': self.name,
-            'email': self.email,
-            'phone': self.phone,
-            'address': self.address,
-            'city': self.city,
-            'state': self.state,
-            'zip': self.zip_code,
-            'activeCases': len([c for c in self.cases if c.status not in ['resolved']]),
-            'paymentHistory': self.payment_history,
-            'lastContact': self.last_contact
+            'accountNumber': self.account_number,
+            'customerName': self.customer_name,
+            'accountType': self.account_type,
+            'customerTier': self.customer_tier,
+            'historicalHealth': self.historical_health,
+            'invoiceNumber': self.invoice_number,
+            'dueDate': self.due_date,
+            'amountDue': self.amount_due,
+            'serviceType': self.service_type,
+            'region': self.region,
+            'customerEmail': self.customer_email
         }
 
 class Case(db.Model):

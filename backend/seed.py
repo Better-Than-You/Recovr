@@ -14,13 +14,10 @@ def seed_data():
         db.create_all()
         
         print("Creating Users...")
-        users = [
-            User(id='u1', name='Admin User', email='admin@fedex.com', role='admin', password_hash='hashed_password'),
-            User(id='u2', name='FedEx Manager', email='manager@fedex.com', role='fedex', password_hash='hashed_password'),
-        ]
+        users = []
         
         # Generate 100+ users using Faker
-        for i in range(3, 153):
+        for i in range(1,20):
             role = random.choice(['fedex', 'dca', 'admin'])
             domain = 'fedex.com' if role == 'fedex' else ('admin.com' if role == 'admin' else fake.domain_name())
             users.append(User(
@@ -42,40 +39,11 @@ def seed_data():
         agency_suffixes = ['Recovery Solutions', 'Collection Agency', 'Recovery Associates', 'Collections Inc',
                           'Debt Recovery', 'Financial Services', 'Recovery Group', 'Collection Services',
                           'Asset Recovery', 'Credit Solutions', 'Recovery Partners', 'Collection Experts']
+        regions = ['Northeast', 'Southeast', 'Midwest', 'Southwest', 'West', 'Pacific Northwest']
         
-        agencies = [
-            Agency(
-                id='prs', 
-                name='Premier Recovery Solutions', 
-                performance_score=0.87, 
-                active_outstanding_amount=2345000, 
-                email='contact@premier.com', 
-                phone='+1 (555) 100-0001',
-                summary='Leading debt collection agency with over 15 years of experience in commercial recovery.'
-            ),
-            Agency(
-                id='eca', 
-                name='Elite Collection Agency', 
-                performance_score=0.92, 
-                active_outstanding_amount=3120000, 
-                email='contact@elite.com', 
-                phone='+1 (555) 100-0002',
-                summary='Top-rated agency specializing in high-value accounts and international collections.'
-            ),
-            Agency(
-                id='rra', 
-                name='Rapid Recovery Associates', 
-                performance_score=0.79, 
-                active_outstanding_amount=1890000, 
-                email='contact@rapid.com', 
-                phone='+1 (555) 100-0003',
-                summary='Fast-track collection services with focus on quick resolution and customer satisfaction.'
-            ),
-        ]
-        
-        # Generate 100+ agencies using Faker
         used_names = {'Premier Recovery Solutions', 'Elite Collection Agency', 'Rapid Recovery Associates'}
-        for i in range(4, 153):
+        agencies = []
+        for i in range(1, 11):
             while True:
                 prefix = random.choice(agency_prefixes)
                 suffix = random.choice(agency_suffixes)
@@ -85,13 +53,17 @@ def seed_data():
                     break
             
             agency_id = f'agn{i:03d}'
+            capacity = random.choice([50, 100, 150, 200, 250, 300])
             agencies.append(Agency(
                 id=agency_id,
                 name=name,
                 performance_score=round(random.uniform(0.65, 0.98), 2),
                 active_outstanding_amount=random.randint(500000, 5000000),
+                capacity=capacity,
+                current_capacity=0,
                 email=fake.company_email(),
                 phone=fake.phone_number(),
+                region=random.choice(regions),
                 summary=fake.catch_phrase() + '. ' + fake.bs().capitalize() + '.'
             ))
         db.session.add_all(agencies)
@@ -101,19 +73,27 @@ def seed_data():
         print("Creating Customers...")
         customers = []
         
-        # Generate 150 customers using Faker
-        for i in range(1, 151):
+        account_types = ['Premium', 'Standard', 'Basic', 'Enterprise']
+        customer_tiers = ['Gold', 'Silver', 'Bronze', 'Platinum']
+        health_statuses = ['Excellent', 'Good', 'Fair', 'Poor', 'Critical']
+        service_types = ['Express Shipping', 'Freight', 'Ground Shipping', 'International', 'Same Day Delivery']
+        regions = ['Northeast', 'Southeast', 'Midwest', 'Southwest', 'West', 'Pacific Northwest']
+        
+        for i in range(1, 21):
+            due_date = (fake.date_between(start_date='-90d', end_date='+30d')).strftime('%Y-%m-%d')
             customers.append(Customer(
                 id=f'CUST-{i:03d}',
-                name=fake.company(),
-                email=fake.company_email(),
-                phone=fake.phone_number(),
-                address=fake.street_address(),
-                city=fake.city(),
-                state=fake.state_abbr(),
-                zip_code=fake.zipcode(),
-                payment_history=random.choice(['excellent', 'good', 'fair', 'poor']),
-                last_contact=(fake.date_between(start_date='-90d', end_date='today')).strftime('%Y-%m-%d')
+                account_number=f'ACC-{random.randint(10000, 99999)}',
+                customer_name=fake.company(),
+                account_type=random.choice(account_types),
+                customer_tier=random.choice(customer_tiers),
+                historical_health=random.choice(health_statuses),
+                invoice_number=f'INV-{random.randint(100000, 999999)}',
+                due_date=due_date,
+                amount_due=round(random.uniform(1000, 50000), 2),
+                service_type=random.choice(service_types),
+                region=random.choice(regions),
+                customer_email=fake.company_email()
             ))
         db.session.add_all(customers)
         db.session.commit()
@@ -124,7 +104,7 @@ def seed_data():
         cases = []
         
         # Generate 150 cases using Faker
-        for i in range(1, 151):
+        for i in range(1, 41):
             customer = random.choice(customers)
             agency_id = random.choice([a.id for a in agencies]) if i % 7 != 0 else None
             status = random.choice(statuses) if agency_id else 'pending'
@@ -162,7 +142,7 @@ def seed_data():
                     f"Agency has highest performance score of {random.randint(85, 95)}% for similar cases",
                     f"Specialized in {random.choice(['commercial', 'retail', 'industrial'])} debt recovery",
                     "Agency has established relationship with customer's industry",
-                    f"Geographic proximity to customer location ({customer.city}, {customer.state})",
+                    f"Geographic proximity to customer location ({customer.region})",
                     "Agency has proven track record with accounts over $50K",
                     "Recommended based on case complexity and recovery probability"
                 ]
@@ -172,7 +152,7 @@ def seed_data():
             
             cases.append(Case(
                 id=f'CS-2024-{i:04d}',
-                customer_name=customer.name,
+                customer_name=customer.customer_name,
                 customer_id=customer.id,
                 invoice_amount=invoice_amount,
                 recovered_amount=recovered_amount,
@@ -190,6 +170,14 @@ def seed_data():
         db.session.add_all(cases)
         db.session.commit()
         print(f"  ✓ Created {len(cases)} cases")
+        
+        # Update agency current_capacity based on active cases
+        print("Updating agency capacities...")
+        for agency in agencies:
+            active_cases_count = len([c for c in cases if c.assigned_agency_id == agency.id and c.status not in ['resolved', 'legal']])
+            agency.current_capacity = active_cases_count
+        db.session.commit()
+        print(f"  ✓ Updated agency capacities")
         
         print("Creating Timeline Events...")
         event_types = ['email', 'status_change', 'payment', 'call', 'legal_notice']
@@ -287,7 +275,7 @@ def seed_data():
         notifications = []
         
         # Generate 120 notifications using Faker
-        for i in range(1, 121):
+        for i in range(1, 21):
             notif_type = random.choice(notification_types)
             case = random.choice(cases)
             priority = random.choice(['high', 'medium', 'low'])
@@ -331,7 +319,7 @@ def seed_data():
         ]
         
         # Generate 150 audit logs using Faker
-        for i in range(1, 151):
+        for i in range(1, 101):
             user = random.choice(users)
             action = random.choice(actions)
             timestamp = fake.date_time_between(start_date='-60d', end_date='now')

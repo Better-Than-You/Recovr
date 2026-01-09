@@ -16,8 +16,9 @@ import {
 import { cn } from '@/lib/utils'
 import { Button } from './ui/button'
 import { useState } from 'react'
+import { useAuthStore } from '@/stores'
 
-type Role = 'fedex' | 'dca'
+type Role = 'fedex' | 'agency'
 
 interface NavItem {
   title: string
@@ -61,7 +62,7 @@ const navItems: NavItem[] = [
     title: 'Customers',
     href: '/customers',
     icon: Users,
-    roles: ['fedex', 'dca']
+    roles: ['fedex', 'agency']
   },
   {
     title: 'Agency Performance',
@@ -79,32 +80,32 @@ const navItems: NavItem[] = [
     title: 'My Assigned Cases',
     href: '/my-cases',
     icon: Briefcase,
-    roles: ['dca']
+    roles: ['agency']
   },
   {
     title: 'Pending Actions',
     href: '/pending-actions',
     icon: Clock,
-    roles: ['dca']
+    roles: ['agency']
   },
   {
     title: 'Recovery Stats',
     href: '/recovery-stats',
     icon: BarChart3,
-    roles: ['dca']
+    roles: ['agency']
   }
 ]
 
 interface SidebarProps {
   currentRole: Role
-  onRoleChange: (role: Role) => void
 }
 
-export function Sidebar({ currentRole, onRoleChange }: SidebarProps) {
+export function Sidebar({ currentRole }: SidebarProps) {
   const location = useLocation()
   const [collapsed, setCollapsed] = useState(false)
-
-  const filteredNavItems = navItems.filter(item =>
+  const user = useAuthStore(state => state.user)
+  
+  const filteredNavItems = navItems.filter(item => 
     item.roles.includes(currentRole)
   )
 
@@ -114,11 +115,11 @@ export function Sidebar({ currentRole, onRoleChange }: SidebarProps) {
       collapsed ? "w-16" : "w-64"
     )}>
       {/* Header */}
-      <div className="border-b border-slate-200 p-4 flex items-center justify-between">
+      <div className="border-b border-slate-200 h-20 px-4 flex items-center justify-between">
         {!collapsed && (
           <div className="flex-1 min-w-0">
-            <h1 className="text-lg font-bold text-slate-900 truncate">DCA Platform</h1>
-            <p className="text-xs text-slate-500 mt-0.5">FedEx Case Study</p>
+            <h1 className="text-3xl font-bold text-slate-900 truncate">Recovr</h1>
+            {/* <p className="text-xs text-slate-500 mt-0.5">kuch to text</p> */}
           </div>
         )}
         <Button
@@ -131,34 +132,9 @@ export function Sidebar({ currentRole, onRoleChange }: SidebarProps) {
         </Button>
       </div>
 
-      {/* Role Switcher */}
-      {!collapsed && (
-        <div className="border-b border-slate-200 p-4">
-          <p className="text-xs font-medium text-slate-500 mb-2">VIEW AS</p>
-          <div className="flex gap-2">
-            <Button
-              variant={currentRole === 'fedex' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => onRoleChange('fedex')}
-              className="flex-1"
-            >
-              FedEx Admin
-            </Button>
-            <Button
-              variant={currentRole === 'dca' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => onRoleChange('dca')}
-              className="flex-1"
-            >
-              DCA Agent
-            </Button>
-          </div>
-        </div>
-      )}
-
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto p-2">
-        <div className="space-y-1">
+        <div className="space-y-1 overflow-hidden">
           {filteredNavItems.map((item) => {
             const Icon = item.icon
             const isActive = location.pathname === item.href
@@ -197,20 +173,20 @@ export function Sidebar({ currentRole, onRoleChange }: SidebarProps) {
       </nav>
 
       {/* Footer */}
-      {!collapsed && (
+      {!collapsed && user && (
         <div className="border-t border-slate-200 p-4">
           <div className="flex items-center gap-3">
             <div className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 shrink-0">
               <span className="text-sm font-medium text-slate-700">
-                {currentRole === 'fedex' ? 'FA' : 'DA'}
+                {user.name.split(' ').map(n => n[0]).join('')}
               </span>
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-slate-900 truncate">
-                {currentRole === 'fedex' ? 'FedEx Admin' : 'DCA Agent'}
+                {user.name}
               </p>
               <p className="text-xs text-slate-500 truncate">
-                {currentRole === 'fedex' ? 'admin@fedex.com' : 'agent@dca.com'}
+                {user.email}
               </p>
             </div>
           </div>
