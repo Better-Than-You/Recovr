@@ -7,6 +7,8 @@ export interface Agency {
   name: string;
   active_cases: number;
   active_outstanding_amount: number;
+  capacity: number;
+  currentCapacity: number;
   success_rate: number;
   contact_email?: string;
   contact_phone?: string;

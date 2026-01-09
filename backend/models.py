@@ -23,6 +23,8 @@ class Agency(db.Model):
     name = db.Column(db.String(100), nullable=False)
     performance_score = db.Column(db.Float)
     active_outstanding_amount = db.Column(db.Float)
+    capacity = db.Column(db.Integer)  # max number of active cases
+    current_capacity = db.Column(db.Integer)  # current number of active cases
     email = db.Column(db.String(120))
     phone = db.Column(db.String(20))
     summary = db.Column(db.String(600), nullable=True, default=None)
@@ -37,6 +39,8 @@ class Agency(db.Model):
             'name': self.name,
             'performanceScore': self.performance_score,
             'activeOutstandingAmount': self.active_outstanding_amount,
+            'capacity': self.capacity,
+            'currentCapacity': self.current_capacity,
             'email': self.email,
             'phone': self.phone,
             'summary': self.summary,

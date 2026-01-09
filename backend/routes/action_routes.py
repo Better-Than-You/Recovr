@@ -1,4 +1,5 @@
 from flask import Blueprint, json, jsonify, request
+import requests
 from models import db, Case, Customer, TimelineEvent
 import os
 import csv
@@ -52,65 +53,12 @@ def upload_cases():
         return jsonify({'error': 'Invalid file type. Please upload CSV file'}), 400
 
     try:
-        # Read CSV directly from memory without saving
-        import io
-        stream = io.StringIO(file.stream.read().decode("UTF8"), newline=None)
-        reader = csv.DictReader(stream)
+       # save csv in the backend
+        filepath = os.path.join('uploads', filename)
+        os.makedirs('uploads', exist_ok=True)
+        file.save(filepath)
         
-        cases_created = 0
-        cases_skipped = 0
-        
-        for row in reader:
-            # Extract required fields from CSV
-            invoice_id = row.get('invoice_id') or row.get('Invoice ID')
-            account_number = row.get('account_number') or row.get('Account Number')
-            customer_email = row.get('customer_email') or row.get('Customer Email')
-            
-            if not invoice_id or not account_number or not customer_email:
-                print(f"Skipping row due to missing required fields: {row}")
-                cases_skipped += 1
-                continue
-            
-            # Check if customer exists in database by email
-            customer = Customer.query.filter_by(email=customer_email).first()
-            
-            if not customer:
-                print(f"Customer not found for email: {customer_email}")
-                cases_skipped += 1
-                continue
-            
-            # Check if case already exists for this invoice
-            existing_case = Case.query.filter_by(invoice_id=invoice_id).first()
-            if existing_case:
-                print(f"Case already exists for invoice: {invoice_id}")
-                cases_skipped += 1
-                continue
-            
-            # Create new case with assigned_agency as null
-            new_case = Case(
-            id=str(uuid.uuid4()),
-            invoice_id=invoice_id,
-            customer_id=customer.id,
-            account_number=account_number,
-            amount_due=float(row.get('amount_due', 0)) if row.get('amount_due') else 0.0,
-            status=row.get('status', 'new'),
-            assigned_agency=None,
-            created_at=datetime.now().isoformat(),
-            last_updated=datetime.now().isoformat()
-            )
-            
-            db.session.add(new_case)
-            cases_created += 1
-        
-        db.session.commit()
-        
-        response_message = f"Successfully processed the CSV file. Created {cases_created} cases, skipped {cases_skipped} rows."
-        
-        response_message = f"Successfully processed the CSV file."
-            
-        return jsonify({
-            'message': response_message,
-        }), 200
+        return jsonify({'message': 'File received successfully'}), 200
         
     except Exception as e:
         db.session.rollback()
@@ -228,3 +176,35 @@ def print_json():
     except Exception as e:
         print(f"Error printing JSON: {e}")
         return jsonify({"error": "Failed to process JSON"}), 400
+    
+@actions_bp.route('/process_csv', methods=['GET'])
+def process_csv():
+    """Send the csv to n8n server to process it
+    
+    Output: 
+        JSON with list of cases objects returned from n8n
+    """
+    n8n_webhook_url = os.getenv('N8N_CSV_WEBHOOK_URL')
+    if not n8n_webhook_url:
+        return jsonify({'error': 'n8n webhook URL not configured'}), 500
+    try:
+        filepath = os.path.join('uploads', 'cases_upload.csv')
+        if not os.path.exists(filepath):
+            return jsonify({'error': 'CSV file not found on server'}), 404
+        
+        with open(filepath, 'rb') as f:
+            files = {'file': (os.path.basename(filepath), f, 'text/csv')}
+            response = requests.post(n8n_webhook_url, files=files)
+            
+            print(response.text)
+            
+            
+        if response.status_code == 200:
+            return jsonify({'message': 'CSV sent to n8n successfully'}), 200
+        else:
+            return jsonify({'error': f'n8n webhook returned status {response.status_code}'}), 500
+    except Exception as e:
+        return jsonify({'error': f'Failed to send CSV to n8n: {str(e)}'}), 500
+        
+    
+    
