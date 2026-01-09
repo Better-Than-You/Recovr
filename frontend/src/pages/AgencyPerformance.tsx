@@ -1,15 +1,12 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { agencies } from '@/data/mockData'
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
+// TODO: Replace with actual API calls to dashboardService.getAgencyPerformance()
+// import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import { TrendingUp, TrendingDown } from 'lucide-react'
 
-const performanceData = agencies.map(agency => ({
-  name: agency.name.split(' ')[0], // Shortened name for chart
-  active_outstanding: agency.activeOutstandingAmount / 1000, // in thousands
-  cases: agency.currentCapacity,
-  score: agency.performanceScore * 100
-}))
+// TODO: Fetch data from API instead of using mock data
+const agencies: any[] = [] // mockData.agencies removed - implement API fetch
+const performanceData: any[] = [] // Derived from agencies - implement after API fetch
 
 export function AgencyPerformance() {
   const formatCurrency = (value: number) => {

@@ -1,12 +1,12 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { mockCases } from '@/data/mockData'
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
+// TODO: Replace with actual API calls to dashboardService.getRecoveryStats()
+// import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import { TrendingUp, Target, Clock } from 'lucide-react'
-import { act } from 'react'
 
 export function RecoveryStats() {
-  const myCases = mockCases.filter(c => c.assignedAgency === 'Premier Recovery Solutions')
+  // TODO: Fetch data from API instead of using mock data
+  const myCases: any[] = [] // mockCases removed - implement API fetch
   
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('en-US', {

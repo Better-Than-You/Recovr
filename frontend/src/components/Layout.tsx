@@ -2,6 +2,7 @@ import { Outlet } from 'react-router-dom'
 import { useAuthStore } from '@/stores'
 import { Sidebar } from './Sidebar'
 import { Navbar } from './Navbar'
+import { ProgressBar } from './ProgressBar'
 
 export function Layout({ children }: { children?: React.ReactNode }) {
   const { user } = useAuthStore()
@@ -16,6 +17,8 @@ export function Layout({ children }: { children?: React.ReactNode }) {
           {children || <Outlet />}
         </main>
       </div>
+      {/* Progress bar only for fedex admin */}
+      {currentRole === 'fedex' && <ProgressBar />}
     </div>
   )
 }
