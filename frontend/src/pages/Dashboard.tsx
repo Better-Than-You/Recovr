@@ -158,9 +158,72 @@ export function Dashboard() {
       const formData = new FormData()
       formData.append('file', file)
       
-      // Simulate progress stages
-      setTimeout(() => setProgressStatus('received'), 500)
-      setTimeout(() => setProgressStatus('processing'), 1000)
+      // OPTION 1: Multi-stage async workflow (Upload → AI Processing → Assignment)
+      // Uncomment this block for multi-request workflow
+      /*
+      // Step 1: Upload file (returns immediately with task_id)
+      const uploadResponse = await api.post('/actions/upload', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      })
+      
+      const { task_id } = uploadResponse.data
+      setProgressStatus('received')
+      
+      // Step 2: Connect to SSE for progress updates
+      const token = localStorage.getItem('token')
+      const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api'
+      const eventSource = new EventSource(`${apiBaseUrl}/actions/progress/${task_id}?token=${token}`)
+      
+      eventSource.onmessage = (event) => {
+        const data = JSON.parse(event.data)
+        setProgressStatus(data.status)
+        
+        if (data.currentAssigned !== undefined && data.totalRows !== undefined) {
+          setProgressData(data.currentAssigned, data.totalRows)
+        }
+        
+        if (data.status === 'done') {
+          eventSource.close()
+          showToast(data.message || `Successfully imported ${data.cases_created} case(s)`, 'success')
+          fetchDashboardData()
+          if (fileInputRef.current) fileInputRef.current.value = ''
+          setIsUploading(false)
+        }
+        
+        if (data.status === 'error') {
+          eventSource.close()
+          showToast(data.message || 'Processing failed', 'error')
+          useUIStore.getState().resetProgress()
+          setIsUploading(false)
+        }
+      }
+      
+      eventSource.onerror = () => {
+        eventSource.close()
+        showToast('Connection error', 'error')
+        useUIStore.getState().resetProgress()
+        setIsUploading(false)
+      }
+      
+      // Step 3: Trigger AI processing (this could be automatic or manual)
+      // For automatic processing:
+      await api.post(`/actions/process/${task_id}`)
+      
+      // OR for manual trigger, you could have a button that calls:
+      // api.post(`/actions/process/${task_id}`)
+      */
+      
+      // OPTION 2: Simulated Progress (for testing UI without backend)
+      // Comment out this block when using multi-stage workflow above
+      
+      // Progress stage timeouts - comment out for real-time updates
+      // Stage 1: Simulate file received
+      await new Promise(resolve => setTimeout(resolve, 800))
+      setProgressStatus('received')
+      
+      // Stage 2: Simulate processing
+      await new Promise(resolve => setTimeout(resolve, 1000))
+      setProgressStatus('processing')
       
       const response = await api.post('/actions/upload', formData, {
         headers: {
@@ -170,18 +233,19 @@ export function Dashboard() {
 
       const { message, cases_created, errors } = response.data
       
-      // Simulate assignment progress
+      // Stage 3: Simulate assignment progress
       setProgressStatus('assigning')
       setProgressData(0, cases_created || 0)
       
-      // Simulate incremental assignment (in real scenario, backend would provide this)
+      // Simulate incremental assignment - comment out for real-time backend updates
       let assignedCount = 0
       const totalCases = cases_created || 0
-      const interval = setInterval(() => {
+      const assignmentInterval = setInterval(() => {
         assignedCount += Math.ceil(totalCases / 10)
         if (assignedCount >= totalCases) {
           assignedCount = totalCases
-          clearInterval(interval)
+          clearInterval(assignmentInterval)
+          // Stage 4: Mark as done
           setProgressStatus('done')
         }
         setProgressData(assignedCount, totalCases)

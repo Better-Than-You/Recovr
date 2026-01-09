@@ -1,5 +1,5 @@
-import { X, Loader2, CheckCircle2, Upload, Radio, Cog, UserCheck } from 'lucide-react'
-import { useUIStore, ProgressStatus } from '@/stores/uiStore'
+import { X, Loader2, CheckCircle2, Upload, Radio, Cog, UserCheck, ChevronDown } from 'lucide-react'
+import { useUIStore, type ProgressStatus } from '@/stores'
 import { useEffect } from 'react'
 
 export function ProgressBar() {
@@ -31,15 +31,17 @@ export function ProgressBar() {
     return (
       <button
         onClick={() => setProgressMinimized(false)}
-        className="fixed bottom-4 right-4 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-full shadow-lg flex items-center gap-2 transition-all z-50 animate-pulse"
+        className="fixed bottom-4 left-4 bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 rounded-lg shadow-xl flex items-center gap-2 transition-all z-50 hover:scale-105"
       >
-        <Loader2 className="w-4 h-4 animate-spin" />
+        <Loader2 className={`w-4 h-4 ${status !== 'done' ? 'animate-spin' : ''}`} />
         <span className="text-sm font-medium">
           {status === 'assigning' && `Processing ${currentAssigned}/${totalRows}`}
           {status === 'uploading' && 'Uploading...'}
           {status === 'received' && 'Received'}
           {status === 'processing' && 'Processing...'}
+          {status === 'done' && 'Complete!'}
         </span>
+        <ChevronDown className="w-4 h-4" />
       </button>
     )
   }
@@ -60,29 +62,32 @@ export function ProgressBar() {
   const progressPercentage = ((currentStepIndex + 1) / steps.length) * 100
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-50">
-      <div className="max-w-7xl mx-auto px-4 py-4">
+    <div className="fixed bottom-4 left-4 w-96 bg-white rounded-lg shadow-2xl border border-gray-200 z-50 animate-in slide-in-from-bottom-5 duration-300">
+      <div className="p-4">
         {/* Header */}
-        <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
-            <Loader2 className={`w-5 h-5 text-blue-600 ${status !== 'done' ? 'animate-spin' : 'hidden'}`} />
-            <CheckCircle2 className={`w-5 h-5 text-green-600 ${status === 'done' ? 'block' : 'hidden'}`} />
+            {status !== 'done' ? (
+              <Loader2 className="w-5 h-5 text-blue-600 animate-spin" />
+            ) : (
+              <CheckCircle2 className="w-5 h-5 text-green-600" />
+            )}
             <h3 className="text-sm font-semibold text-gray-900">
               CSV Upload Progress
             </h3>
           </div>
           <button
             onClick={() => setProgressMinimized(true)}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
+            className="text-gray-400 hover:text-gray-600 transition-colors p-1 hover:bg-gray-100 rounded"
             aria-label="Minimize"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* Progress Bar */}
         <div className="mb-4">
-          <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+          <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
             <div
               className={`h-full transition-all duration-500 ease-out ${
                 status === 'done' ? 'bg-green-500' : 'bg-blue-600'
@@ -93,60 +98,61 @@ export function ProgressBar() {
         </div>
 
         {/* Steps */}
-        <div className="flex justify-between items-start">
+        <div className="space-y-3">
           {steps.map((step, index) => {
             const isActive = index === currentStepIndex
             const isCompleted = index < currentStepIndex
-            const isPending = index > currentStepIndex
 
             return (
               <div
                 key={step.key}
-                className="flex flex-col items-center flex-1"
+                className={`flex items-center gap-3 transition-all ${
+                  isActive || isCompleted ? 'opacity-100' : 'opacity-40'
+                }`}
               >
                 {/* Icon Circle */}
                 <div
-                  className={`w-10 h-10 rounded-full flex items-center justify-center mb-2 transition-all ${
+                  className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 transition-all ${
                     isCompleted
                       ? 'bg-green-100 text-green-600'
                       : isActive
-                      ? 'bg-blue-100 text-blue-600 animate-pulse'
+                      ? 'bg-blue-100 text-blue-600 ring-2 ring-blue-200'
                       : 'bg-gray-100 text-gray-400'
                   }`}
                 >
-                  {step.icon}
+                  {isCompleted ? (
+                    <CheckCircle2 className="w-4 h-4" />
+                  ) : (
+                    step.icon
+                  )}
                 </div>
 
-                {/* Label */}
-                <span
-                  className={`text-xs font-medium text-center ${
-                    isCompleted
-                      ? 'text-green-600'
-                      : isActive
-                      ? 'text-blue-600'
-                      : 'text-gray-400'
-                  }`}
-                >
-                  {step.label}
+                {/* Label and Progress */}
+                <div className="flex-1">
+                  <div
+                    className={`text-sm font-medium ${
+                      isCompleted
+                        ? 'text-green-600'
+                        : isActive
+                        ? 'text-blue-600'
+                        : 'text-gray-500'
+                    }`}
+                  >
+                    {step.label}
+                  </div>
                   {step.key === 'assigning' && status === 'assigning' && (
-                    <div className="text-xs mt-1 font-semibold">
-                      {currentAssigned}/{totalRows}
+                    <div className="text-xs text-gray-500 mt-1">
+                      {currentAssigned} of {totalRows} cases assigned
                     </div>
                   )}
-                </span>
+                </div>
 
-                {/* Connector Line */}
-                {index < steps.length - 1 && (
-                  <div
-                    className={`absolute h-0.5 transition-all duration-500 ${
-                      isCompleted ? 'bg-green-500' : 'bg-gray-200'
-                    }`}
-                    style={{
-                      width: `calc(100% / ${steps.length})`,
-                      left: `${((index + 0.5) / steps.length) * 100}%`,
-                      top: '20px',
-                    }}
-                  />
+                {/* Status Indicator */}
+                {isActive && status !== 'done' && (
+                  <Loader2 className="w-4 h-4 text-blue-600 animate-spin flex-shrink-0" />
+                )}
+                {isCompleted && (
+                  <CheckCircle2 className="w-4 h-4 text-green-600 flex-shrink-0" />
                 )}
               </div>
             )
