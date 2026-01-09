@@ -149,11 +149,18 @@ export function Dashboard() {
       return
     }
 
+    const { setProgressStatus, setProgressData } = useUIStore.getState()
+    
     setIsUploading(true)
+    setProgressStatus('uploading')
 
     try {
       const formData = new FormData()
       formData.append('file', file)
+      
+      // Simulate progress stages
+      setTimeout(() => setProgressStatus('received'), 500)
+      setTimeout(() => setProgressStatus('processing'), 1000)
       
       const response = await api.post('/actions/upload', formData, {
         headers: {
@@ -162,6 +169,24 @@ export function Dashboard() {
       }) 
 
       const { message, cases_created, errors } = response.data
+      
+      // Simulate assignment progress
+      setProgressStatus('assigning')
+      setProgressData(0, cases_created || 0)
+      
+      // Simulate incremental assignment (in real scenario, backend would provide this)
+      let assignedCount = 0
+      const totalCases = cases_created || 0
+      const interval = setInterval(() => {
+        assignedCount += Math.ceil(totalCases / 10)
+        if (assignedCount >= totalCases) {
+          assignedCount = totalCases
+          clearInterval(interval)
+          setProgressStatus('done')
+        }
+        setProgressData(assignedCount, totalCases)
+      }, 300)
+      
       showToast(message || `Successfully imported ${cases_created} case(s)`, 'success')
       
       if (errors && errors.length > 0) {
@@ -179,6 +204,8 @@ export function Dashboard() {
       console.error('Error uploading file:', error)
       const errorMessage = error.response?.data?.error || 'Failed to upload file'
       showToast(errorMessage, 'error')
+      // Reset progress on error
+      useUIStore.getState().resetProgress()
     } finally {
       setIsUploading(false)
     }
