@@ -40,13 +40,14 @@ def create_app():
     from routes.customer_routes import customers_bp
     from routes.dashboard_routes import dashboard_bp
     from routes.action_routes import actions_bp
+    from routes.n8n_routes import n8n_bp
     
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
     app.register_blueprint(cases_bp, url_prefix='/api/cases')
     app.register_blueprint(agencies_bp, url_prefix='/api/agencies')
     app.register_blueprint(customers_bp, url_prefix='/api/customers')
     app.register_blueprint(dashboard_bp, url_prefix='/api') # /api/stats, /api/performance etc
-    app.register_blueprint(actions_bp, url_prefix='/api/actions')
+    app.register_blueprint(n8n_bp, url_prefix='/api/n8n')
 
     @app.route('/health')
     def health_check():

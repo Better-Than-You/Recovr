@@ -72,7 +72,7 @@ export function Dashboard() {
     const interval = setInterval(() => {
       setLastUpdate(new Date())
       fetchDashboardData() // Refresh data
-    }, 2000)
+    }, 30000)
     
     return () => clearInterval(interval)
   }, [])
