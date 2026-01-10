@@ -15,6 +15,9 @@ You will receive:
    - due_date: Original due date (YYYY-MM-DD)
    - last_contact: Last contact date (YYYY-MM-DD)
    - created_at: Case creation timestamp (ISO 8601)
+   - assigned_agency_id: Currently assigned agency ID (if any)
+   - assigned_agency_reason: Reason for assignment (if assigned)
+   - auto_assign_after_hours: Hours until auto-assignment (for pending cases)
 
 2. Agency database with these fields for each DCA:
    - id: Agency identifier
@@ -23,6 +26,7 @@ You will receive:
    - activeOutstandingAmount: Total $ currently being collected
    - capacity: Maximum number of cases the agency can handle
    - currentCapacity: Number of cases currently assigned
+   - region: Geographic region served
    - email: Contact email
    - phone: Contact phone
    - summary: Agency specialization and details

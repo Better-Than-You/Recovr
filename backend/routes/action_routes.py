@@ -11,9 +11,6 @@ import threading
 
 actions_bp = Blueprint('actions', __name__)
 
-# In-memory task progress store (use Redis in production)
-task_progress = {}
-
 @actions_bp.route('/pending', methods=['GET'])
 def get_pending_actions():
     # Return mock actions for now, as we didn't model Action in DB yet fully 
@@ -44,7 +41,7 @@ def get_pending_actions():
 
 @actions_bp.route('/upload', methods=['POST'])
 def upload_cases():
-    """Initial file upload - saves file and returns task ID for tracking"""
+    """Upload CSV file and process with real-time SSE progress updates"""
     if 'file' not in request.files:
         return jsonify({'error': 'No file part'}), 400
     
@@ -57,186 +54,11 @@ def upload_cases():
     if not filename.lower().endswith('.csv'):
         return jsonify({'error': 'Invalid file type. Please upload CSV file'}), 400
 
-    try:
-        # Generate task ID
-        task_id = str(uuid.uuid4())
-        
-        # Save file
-        filepath = os.path.join('uploads', f"{task_id}_{filename}")
-        os.makedirs('uploads', exist_ok=True)
-        file.save(filepath)
-        
-        # Initialize task progress
-        task_progress[task_id] = {
-            'status': 'received',
-            'message': 'File received, waiting for processing',
-            'currentAssigned': 0,
-            'totalRows': 0,
-            'filepath': filepath
-        }
-        
-        # Return task ID immediately
-        return jsonify({
-            'task_id': task_id,
-            'message': 'File uploaded successfully',
-            'status': 'received'
-        }), 200
-        
-    except Exception as e:
-        return jsonify({'error': f'Failed to upload file: {str(e)}'}), 500
-
-
-@actions_bp.route('/process/<task_id>', methods=['POST'])
-def process_cases(task_id):
-    """Trigger AI processing or case assignment (separate from upload)"""
-    if task_id not in task_progress:
-        return jsonify({'error': 'Invalid task ID'}), 404
-    
-    task_data = task_progress[task_id]
-    
-    if task_data['status'] == 'processing' or task_data['status'] == 'assigning':
-        return jsonify({'error': 'Task already in progress'}), 400
-    
-    # Start background processing
-    def process_in_background():
-        try:
-            task_progress[task_id]['status'] = 'processing'
-            task_progress[task_id]['message'] = 'AI is processing the CSV...'
-            
-            filepath = task_data['filepath']
-            
-            # Simulate AI processing time
-            time.sleep(2)  # Replace with actual AI processing
-            
-            # Parse CSV
-            cases_data = []
-            with open(filepath, 'r', encoding='utf-8') as csvfile:
-                csv_reader = csv.DictReader(csvfile)
-                for row in csv_reader:
-                    cases_data.append(row)
-            
-            total_cases = len(cases_data)
-            task_progress[task_id]['totalRows'] = total_cases
-            task_progress[task_id]['status'] = 'assigning'
-            task_progress[task_id]['message'] = 'Assigning cases...'
-            
-            # Process cases
-            cases_created = 0
-            for index, row in enumerate(cases_data):
-                try:
-                    # Create or update customer
-                    customer = Customer.query.filter_by(email=row.get('customer_email', '')).first()
-                    if not customer:
-                        customer = Customer(
-                            id=str(uuid.uuid4()),
-                            name=row.get('customer_name', 'Unknown'),
-                            email=row.get('customer_email', ''),
-                            phone=row.get('customer_phone', ''),
-                            address=row.get('customer_address', '')
-                        )
-                        db.session.add(customer)
-                    
-                    # Create case
-                    case = Case(
-                        id=str(uuid.uuid4()),
-                        invoice_number=row.get('invoice_number', f'INV-{uuid.uuid4().hex[:8]}'),
-                        customer_id=customer.id,
-                        amount=float(row.get('amount', 0)),
-                        aging_days=int(row.get('aging_days', 0)),
-                        status=row.get('status', 'new'),
-                        priority=row.get('priority', 'medium'),
-                        assigned_agency_id=row.get('agency_id'),
-                        notes=row.get('notes', '')
-                    )
-                    db.session.add(case)
-                    cases_created += 1
-                    
-                    # Commit in batches
-                    if (index + 1) % 10 == 0 or (index + 1) == total_cases:
-                        db.session.commit()
-                        task_progress[task_id]['currentAssigned'] = cases_created
-                        time.sleep(0.1)
-                        
-                except Exception as e:
-                    print(f"Error processing row {index}: {e}")
-                    db.session.rollback()
-            
-            # Mark as done
-            task_progress[task_id]['status'] = 'done'
-            task_progress[task_id]['message'] = f'Successfully imported {cases_created} cases'
-            task_progress[task_id]['cases_created'] = cases_created
-            
-        except Exception as e:
-            task_progress[task_id]['status'] = 'error'
-            task_progress[task_id]['message'] = f'Processing failed: {str(e)}'
-    
-    # Start background thread
-    thread = threading.Thread(target=process_in_background)
-    thread.daemon = True
-    thread.start()
-    
-    return jsonify({
-        'message': 'Processing started',
-        'task_id': task_id
-    }), 200
-
-
-@actions_bp.route('/progress/<task_id>', methods=['GET'])
-def get_progress(task_id):
-    """SSE endpoint to stream progress updates for a task"""
-    if task_id not in task_progress:
-        return jsonify({'error': 'Invalid task ID'}), 404
-    
-    def generate_progress():
-        """Generator function for SSE progress updates"""
-        last_status = None
-        last_assigned = -1
-        
-        while True:
-            if task_id not in task_progress:
-                break
-                
-            current_data = task_progress[task_id]
-            current_status = current_data['status']
-            current_assigned = current_data.get('currentAssigned', 0)
-            
-            # Send update if status changed or progress updated
-            if current_status != last_status or current_assigned != last_assigned:
-                yield f"data: {json.dumps(current_data)}\n\n"
-                last_status = current_status
-                last_assigned = current_assigned
-            
-            # Exit if done or error
-            if current_status in ['done', 'error']:
-                break
-            
-            time.sleep(0.5)  # Poll every 500ms
-    
-    return Response(
-        stream_with_context(generate_progress()),
-        mimetype='text/event-stream',
-        headers={
-            'Cache-Control': 'no-cache',
-            'X-Accel-Buffering': 'no',
-            'Connection': 'keep-alive'
-        }
-    )
-
-
-@actions_bp.route('/upload-legacy', methods=['POST'])
-def upload_cases_legacy():
-    """Legacy single-request upload (keep for backward compatibility)"""
-    if 'file' not in request.files:
-        return jsonify({'error': 'No file part'}), 400
-    
-    file = request.files['file']
-    if file.filename == '':
-        return jsonify({'error': 'No selected file'}), 400
-
-    # Validate file extension
-    filename = secure_filename(file.filename or '')
-    if not filename.lower().endswith('.csv'):
-        return jsonify({'error': 'Invalid file type. Please upload CSV file'}), 400
+    # Save file BEFORE generator (file object can't be used inside generator)
+    filepath = os.path.join('uploads', filename)
+    os.makedirs('uploads', exist_ok=True)
+    file.save(filepath)
+    print(f"File saved to: {filepath}")
 
     def generate_progress():
         """Generator function for SSE progress updates"""
@@ -244,11 +66,6 @@ def upload_cases_legacy():
             # Stage 1: Uploading
             yield f"data: {json.dumps({'status': 'uploading', 'message': 'Receiving file...'})}\n\n"
             time.sleep(0.5)  # Simulate upload time
-            
-            # Save file
-            filepath = os.path.join('uploads', filename)
-            os.makedirs('uploads', exist_ok=True)
-            file.save(filepath)
             
             # Stage 2: Received
             yield f"data: {json.dumps({'status': 'received', 'message': 'File received successfully'})}\n\n"
@@ -264,10 +81,46 @@ def upload_cases_legacy():
                     cases_data.append(row)
             
             total_cases = len(cases_data)
+            print(f"Parsed {total_cases} cases from CSV")
             
             if total_cases == 0:
                 yield f"data: {json.dumps({'status': 'error', 'message': 'No valid data found in CSV'})}\n\n"
                 return
+            
+            # Send CSV data to n8n webhook asynchronously (non-blocking)
+            n8n_url = os.getenv('N8N_WEBHOOK_URL')
+            print(f"N8N_WEBHOOK_URL from env: {n8n_url}")
+            
+            if n8n_url:
+                print(f"Sending {total_cases} cases to n8n at {n8n_url}")
+                print(f"Sample data (first row): {cases_data[0] if cases_data else 'No data'}")
+                
+                def send_to_n8n(data, url, count):
+                    """Send data to n8n in background thread without blocking"""
+                    try:
+                        payload = {'cases': data, 'total_cases': count}
+                        print(f"Sending payload with {len(data)} cases to {url}")
+                        response = requests.post(
+                            url,
+                            json=payload,
+                            headers={'Content-Type': 'application/json'},
+                            timeout=600  # 10 minute timeout for long n8n processing
+                        )
+                        print(f"n8n webhook response: {response.status_code}")
+                        print(f"n8n webhook response body: {response.text}")
+                    except requests.exceptions.RequestException as e:
+                        print(f"n8n webhook error: {e}")
+                        import traceback
+                        traceback.print_exc()
+                
+                # Start n8n request in background thread (fire and forget)
+                n8n_thread = threading.Thread(target=send_to_n8n, args=(cases_data, n8n_url, total_cases))
+                n8n_thread.daemon = True
+                n8n_thread.start()
+                
+                yield f"data: {json.dumps({'status': 'n8n_sent', 'message': 'Data sent to n8n for background processing'})}\n\n"
+            else:
+                print("N8N_WEBHOOK_URL not configured, skipping n8n integration")
             
             # Stage 4: Assigning - Process cases in batches
             yield f"data: {json.dumps({'status': 'assigning', 'currentAssigned': 0, 'totalRows': total_cases, 'message': 'Starting case assignment...'})}\n\n"
