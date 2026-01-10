@@ -58,7 +58,7 @@ We utilized a modern, scalable stack focusing on rapid automation and local LLM 
 
 ### 1. Clone the Repository & Run the application
 ```bash
-git clone [https://github.com/your-username/recovr.git](https://github.com/your-username/recovr.git)
+git clone https://github.com/Better-Than-You/Recovr.git
 
 cd recovr/frontend
 npm install && npm run dev
@@ -72,7 +72,7 @@ n8n start
 
 ### 2. Upload the workflow json file in n8n
 
-Upload  `LM Studio Chat Completion.json` to n8n and setup gmail credentials
+Upload  `./n8n/n8n-workflow.json` to n8n and setup gmail credentials
 
 ### 3. LM Studio and AI
 

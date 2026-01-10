@@ -18,6 +18,12 @@ venv/
 dca.db
 instance/
 
+# other files
+cases.json
+fedex_input.csv
+prompts.md
+sample_cases_template.csv
+
 # IDE settings
 .vscode/
 .idea/
