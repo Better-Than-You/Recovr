@@ -19,17 +19,14 @@ def n8n_add_case():
     data = request.get_json()
     filepath = 'cases.json'
     
-    # Read existing cases or create empty list if file doesn't exist
     try:
         with open(filepath, 'r', encoding='utf-8') as f:
             cases = json.load(f)
     except (FileNotFoundError, json.JSONDecodeError):
         cases = []
     
-    # Append new case to the list
     cases.append(data)
     
-    # Write updated list back to file
     with open(filepath, 'w', encoding='utf-8') as f:
         json.dump(cases, f, indent=4)
     return jsonify({'status': 'success', 'message': 'Data received and saved to cases.json'}), 200
@@ -38,5 +35,5 @@ def n8n_add_case():
 def n8n_clear_cases():
     """Clear the cases.json file"""
     with open('cases.json', 'w', encoding='utf-8') as f:
-        f.write('[]')  # Clear the file by writing an empty JSON array
+        f.write('[]')
     return jsonify({'status': 'success', 'message': 'cases.json cleared'}), 200

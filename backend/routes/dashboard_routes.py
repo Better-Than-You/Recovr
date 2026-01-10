@@ -6,7 +6,7 @@ dashboard_bp = Blueprint('dashboard', __name__)
 
 @dashboard_bp.route('/dashboard/stats', methods=['GET'])
 def get_dashboard_stats():
-    # Calculate stats
+    # stats
     total_cases = Case.query.count()
     active_cases = Case.query.filter(Case.status.notin_(['resolved', 'dismissed'])).count()
     resolved_cases = Case.query.filter_by(status='resolved').count()
@@ -25,7 +25,8 @@ def get_dashboard_stats():
 
 @dashboard_bp.route('/stats/recovery', methods=['GET'])
 def get_recovery_stats():
-    # Mock data for charts
+    # mock data
+    # TODO - implement with the db
     return jsonify([
         {'month': 'Jan', 'recovered': 120000},
         {'month': 'Feb', 'recovered': 135000},

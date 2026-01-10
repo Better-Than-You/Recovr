@@ -7,7 +7,7 @@ cases_bp = Blueprint('cases', __name__)
 
 @cases_bp.route('', methods=['GET'])
 def get_cases():
-    # Pagination
+    # pagination and filters
     page = request.args.get('page', 1, type=int)
     limit = request.args.get('limit', 10, type=int)
     search_query = request.args.get('search', '')
@@ -16,7 +16,6 @@ def get_cases():
     
     query = Case.query
     
-    # Filter by agency if specified (for agency employees)
     if agency_id:
         query = query.filter_by(assigned_agency_id=agency_id)
 
@@ -27,7 +26,7 @@ def get_cases():
         query = query.filter(Case.customer_name.ilike(f'%{search_query}%'))
 
     # Sort by created_at desc
-    # query = query.order_by(Case.created_at.desc()) # SQLite might store dates as strings, careful
+    # query = query.order_by(Case.created_at.desc()) NOTE - could be string format, need to check later
 
     pagination = query.paginate(page=page, per_page=limit, error_out=False)
     
@@ -44,12 +43,11 @@ def get_case(case_id):
     if not case:
         return jsonify({'error': 'Case not found'}), 404
     
-    # Get the latest timeline event for last contact
     latest_event = TimelineEvent.query.filter_by(case_id=case_id)\
         .order_by(TimelineEvent.timestamp.desc())\
         .first()
     
-    # Build custom response object
+    # case object + latest contact time
     case_data = case.to_dict()
     case_data['lastContact'] = latest_event.timestamp if latest_event else None
     
@@ -59,7 +57,6 @@ def get_case(case_id):
 def create_case():
     data = request.json
     
-    # Basic validation
     required = ['customerName', 'amount']
     for field in required:
         if field not in data:
@@ -92,8 +89,6 @@ def update_case(case_id):
         case.status = data['status']
     if 'amount' in data:
         case.invoice_amount = data['amount']
-    
-    # Handle other fields...
 
     db.session.commit()
     return jsonify(case.to_dict())
@@ -105,7 +100,7 @@ def get_case_timeline(case_id):
         return jsonify({'error': 'Case not found'}), 404
         
     events = TimelineEvent.query.filter_by(case_id=case_id).all()
-    # Sort by timestamp
+    # sorting by timestamp ascending
     events.sort(key=lambda x: x.timestamp if x.timestamp else "")
     
     return jsonify([e.to_dict() for e in events])
@@ -126,7 +121,6 @@ def assign_case(case_id):
     case.assigned_agency_id = agency_id
     case.status = 'assigned'
     
-    # Add timeline event
     event = TimelineEvent(
         id=f"evt-{uuid.uuid4().hex[:8]}",
         case_id=case_id,
@@ -195,26 +189,21 @@ def add_timeline_event(case_id):
     
     data = request.json
     
-    # Validate required fields
     required = ['eventType', 'title', 'actor']
     for field in required:
         if field not in data:
             return jsonify({'error': f'Missing required field: {field}'}), 400
     
-    # Validate actor
     valid_actors = ['fedex', 'dca', 'customer']
     if data['actor'] not in valid_actors:
         return jsonify({'error': f'Invalid actor. Must be one of: {valid_actors}'}), 400
     
-    # Validate event type
     valid_event_types = ['email', 'call', 'status_change', 'payment', 'legal_notice']
     if data['eventType'] not in valid_event_types:
         return jsonify({'error': f'Invalid event type. Must be one of: {valid_event_types}'}), 400
     
-    # Use provided timestamp or default to current time
     timestamp = data.get('timestamp', datetime.utcnow().isoformat() + 'Z')
     
-    # Create timeline event
     event = TimelineEvent(
         id=f"evt-{uuid.uuid4().hex[:8]}",
         case_id=case_id,
@@ -225,7 +214,6 @@ def add_timeline_event(case_id):
         description=data.get('description', '')
     )
     
-    # Add optional metadata fields
     if 'metadata' in data:
         metadata = data['metadata']
         if 'amount' in metadata:

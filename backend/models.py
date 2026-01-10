@@ -8,7 +8,7 @@ class User(db.Model):
     name = db.Column(db.String(100), nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
     role = db.Column(db.String(20), nullable=False) # 'fedex', 'dca', 'admin'
-    password_hash = db.Column(db.String(128)) # In a real app, hash this!
+    password_hash = db.Column(db.String(128))
 
     def to_dict(self):
         return {
@@ -29,9 +29,8 @@ class Agency(db.Model):
     phone = db.Column(db.String(20))
     region = db.Column(db.String(100))
     summary = db.Column(db.String(600), nullable=True, default=None)
-    password_hash = db.Column(db.String(128), nullable=True)  # For agency employee login
+    password_hash = db.Column(db.String(128), nullable=True)  # for agency employee login
     
-    # Relationship with cases
     cases = db.relationship('Case', backref='agency', lazy=True)
 
     def to_dict(self):
@@ -81,9 +80,9 @@ class Customer(db.Model):
         }
 
 class Case(db.Model):
-    id = db.Column(db.String(50), primary_key=True) # caseId
-    customer_name = db.Column(db.String(100), nullable=False) # Redundant but keeps frontend structure
-    customer_id = db.Column(db.String(50), db.ForeignKey('customer.id'), nullable=True) # Link to actual customer
+    id = db.Column(db.String(50), primary_key=True) # caseId, aka invoiceId
+    customer_name = db.Column(db.String(100), nullable=False) # for the sake of frontend
+    customer_id = db.Column(db.String(50), db.ForeignKey('customer.id'), nullable=True) # customer table primary key
     invoice_amount = db.Column(db.Float, nullable=False)
     recovered_amount = db.Column(db.Float, nullable=False)
     aging_days = db.Column(db.Integer)
@@ -102,7 +101,7 @@ class Case(db.Model):
     def to_dict(self):
         return {
             'id': self.id,
-            'caseId': self.id, # for frontend consistency
+            'caseId': self.id, # for the sake of frontend
             'customerName': self.customer_name,
             'invoiceAmount': self.invoice_amount,
             'recoveredAmount': self.recovered_amount,
@@ -130,7 +129,7 @@ class TimelineEvent(db.Model):
     title = db.Column(db.String(100))
     description = db.Column(db.Text)
     
-    # Metadata fields (stored as individual columns for simplicity in sqlite, could be JSON)
+    # metadata
     meta_amount = db.Column(db.Float, nullable=True)
     meta_email_subject = db.Column(db.String(200), nullable=True)
     meta_email_content = db.Column(db.String(2000), nullable=True)

@@ -4,7 +4,7 @@ import uuid
 
 auth_bp = Blueprint('auth', __name__)
 
-# Hardcoded FedEx admin credential
+# hardcoded FedEx admin credentials
 FEDEX_ADMIN = {
     'email': 'admin@fedex.com',
     'password': 'fedex123',
@@ -13,7 +13,7 @@ FEDEX_ADMIN = {
     'role': 'fedex'
 }
 
-# In-memory session storage (in production, use Redis or similar)
+# temporary in-memory session store for demo purposes
 active_sessions = {}
 
 @auth_bp.route('/login', methods=['POST'])
@@ -22,11 +22,11 @@ def login():
     email = data.get('email')
     password = data.get('password')
     
-    # Validate credentials
+    # check creds
     if not email or not password:
         return jsonify({'error': 'Email and password are required'}), 400
     
-    # Check if it's FedEx admin login
+    # if fedex admin
     if email == FEDEX_ADMIN['email'] and password == FEDEX_ADMIN['password']:
         token = f"session-{uuid.uuid4()}"
         
@@ -47,22 +47,22 @@ def login():
             }
         })
     
-    # Check if it's an agency employee login
+    # else, check agency employee
     agency = Agency.query.filter_by(email=email).first()
     
     if not agency:
         return jsonify({'error': 'Invalid credentials'}), 401
     
-    # For now, using simple password check (in production, use proper hashing)
+    # using simple password check for demo (in production, use proper hashing)
     # Password format: dca@<agency_id>
     expected_password = f'dca@{agency.id}'
     if password != expected_password:
         return jsonify({'error': 'Invalid credentials'}), 401
     
-    # Generate session token
+    # token generation
     token = f"session-{uuid.uuid4()}"
     
-    # Store session for agency employee
+    # store session
     active_sessions[token] = {
         'id': agency.id,
         'email': email,
@@ -72,7 +72,6 @@ def login():
         'agencyName': agency.name
     }
     
-    # Return token and user data
     return jsonify({
         'token': token,
         'user': {
@@ -87,16 +86,13 @@ def login():
 
 @auth_bp.route('/me', methods=['GET'])
 def get_current_user():
-    # Parse Authorization header
+    """returns the current logged in user data based on token"""
     auth_header = request.headers.get('Authorization')
     
     if not auth_header or not auth_header.startswith('Bearer '):
         return jsonify({'error': 'Unauthorized'}), 401
     
-    # Extract token
     token = auth_header.replace('Bearer ', '')
-    
-    # Validate token and get user from session
     user_data = active_sessions.get(token)
     if not user_data:
         return jsonify({'error': 'Invalid or expired token'}), 401
@@ -105,12 +101,11 @@ def get_current_user():
 
 @auth_bp.route('/logout', methods=['POST'])
 def logout():
-    # Parse Authorization header
+    """logs out the current user by deleting the session token"""
     auth_header = request.headers.get('Authorization')
     
     if auth_header and auth_header.startswith('Bearer '):
         token = auth_header.replace('Bearer ', '')
-        # Remove token from active sessions
         if token in active_sessions:
             del active_sessions[token]
     

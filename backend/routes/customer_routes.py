@@ -10,12 +10,9 @@ def get_customers():
     search = request.args.get('search', '')
     agency_id = request.args.get('agency_id', None)  # Filter by agency
     
-    # Base query
     query = Customer.query
     
-    # Filter by agency if specified (for agency employees)
     if agency_id:
-        # Get customers who have cases assigned to this agency
         query = query.join(Case, Customer.id == Case.customer_id).filter(
             Case.assigned_agency_id == agency_id
         ).distinct()
@@ -51,9 +48,7 @@ def get_customer_cases(customer_id):
     if not customer:
         return jsonify({'error': 'Customer not found'}), 404
         
-    # In our model, Case links to Customer via customer_id (if we added that foreign key), 
-    # but initially we only had customer_name strings in mock data. 
-    # The Case model in models.py has customer_id now.
+    # TODO - need to update to match the current model
     
     cases = Case.query.filter_by(customer_id=customer_id).all()
     return jsonify([c.to_dict() for c in cases])

@@ -4,23 +4,23 @@ from flask_cors import CORS
 from dotenv import load_dotenv
 from models import db
 
-# Load environment variables
+# .env eviroment variables loading
 load_dotenv()
 
 def create_app():
     app = Flask(__name__)
     
-    # Configuration
+    # config
     base_dir = os.path.abspath(os.path.dirname(__file__))
-    # Use forward slashes for cross-platform compatibility
     db_path = os.path.join(base_dir, 'dca.db').replace('\\', '/')
     app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{db_path}'
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-secret-key-change-in-production')
     
-    # Initialize CORS with explicit configuration
+    # cors
     CORS(app, resources={
         r"/api/*": {
+            # change the origins as needed for your frontend
             "origins": ["http://localhost:5173", "http://localhost:3000", "http://127.0.0.1:5173", "http://127.0.0.1:3000"],
             "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
             "allow_headers": ["Content-Type", "Authorization"],
@@ -33,7 +33,7 @@ def create_app():
     
     db.init_app(app)
     
-    # Register Blueprints
+    # blueprints
     from routes.auth_routes import auth_bp
     from routes.case_routes import cases_bp
     from routes.agency_routes import agencies_bp
@@ -48,7 +48,8 @@ def create_app():
     app.register_blueprint(customers_bp, url_prefix='/api/customers')
     app.register_blueprint(dashboard_bp, url_prefix='/api') # /api/stats, /api/performance etc
     app.register_blueprint(n8n_bp, url_prefix='/api/n8n')
-
+    app.register_blueprint(actions_bp, url_prefix='/api/actions') # TODO - refactor later
+    
     @app.route('/health')
     def health_check():
         return {'status': 'healthy'}, 200
@@ -59,5 +60,6 @@ if __name__ == '__main__':
     app = create_app()
     with app.app_context():
         db.create_all()
-    # Bind to 0.0.0.0 for cross-platform compatibility
+        
+    # 0.0.0.0:5000 for docker compatibility
     app.run(debug=True, host='0.0.0.0', port=5000)
