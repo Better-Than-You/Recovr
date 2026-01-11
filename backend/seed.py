@@ -73,27 +73,44 @@ def seed_data():
         print("Creating Customers...")
         customers = []
         
-        account_types = ['Premium', 'Standard', 'Basic', 'Enterprise']
-        customer_tiers = ['Gold', 'Silver', 'Bronze', 'Platinum']
-        health_statuses = ['Excellent', 'Good', 'Fair', 'Poor', 'Critical']
-        service_types = ['Express Shipping', 'Freight', 'Ground Shipping', 'International', 'Same Day Delivery']
-        regions = ['Northeast', 'Southeast', 'Midwest', 'Southwest', 'West', 'Pacific Northwest']
+        account_types = ['Corporate', 'Individual']
+        customer_tiers = ['Gold', 'Silver', 'Bronze', 'Platinum', 'Standard']
+        health_statuses = ['Good', 'Fair', 'Poor']
+        service_types = ['Express', 'Freight', 'Ground', 'International']
+        regions = ['US', 'EMEA', 'APAC', 'LATAM']
         
-        for i in range(1, 21):
-            due_date = (fake.date_between(start_date='-90d', end_date='+30d')).strftime('%Y-%m-%d')
+        for i in range(1, 51):
+            # Mix of corporate and individual accounts
+            is_corporate = random.choice([True, False])
+            
+            if is_corporate:
+                customer_name = fake.company()
+                email_domain = customer_name.lower().replace(' ', '').replace(',', '').replace('.', '')[:15]
+                customer_email = f'{random.choice(["billing", "finance", "accounts", "payment"])}@{email_domain}.com'
+            else:
+                customer_name = fake.name()
+                first_initial = customer_name.split()[0][0].lower()
+                last_name = customer_name.split()[-1].lower()
+                customer_email = f'{first_initial}.{last_name}@{random.choice(["email.com", "personal.com", "mail.com", "inbox.com"])}'
+            
+            # Generate due date in DD-MM-YYYY format
+            due_date_obj = fake.date_between(start_date='-90d', end_date='+30d')
+            due_date = due_date_obj.strftime('%d-%m-%Y')
+            
+            # Generate account number with sequential pattern
+            account_number = f'ACCT-{1005 + i}'
+            
             customers.append(Customer(
-                id=f'CUST-{i:03d}',
-                account_number=f'ACC-{random.randint(10000, 99999)}',
-                customer_name=fake.company(),
-                account_type=random.choice(account_types),
+                account_number=account_number,
+                customer_name=customer_name,
+                account_type='Corporate' if is_corporate else 'Individual',
                 customer_tier=random.choice(customer_tiers),
                 historical_health=random.choice(health_statuses),
-                invoice_number=f'INV-{random.randint(100000, 999999)}',
                 due_date=due_date,
-                amount_due=round(random.uniform(1000, 50000), 2),
+                amount_due=round(random.uniform(50, 5000), 2),
                 service_type=random.choice(service_types),
                 region=random.choice(regions),
-                customer_email=fake.company_email()
+                customer_email=customer_email
             ))
         db.session.add_all(customers)
         db.session.commit()
@@ -153,7 +170,7 @@ def seed_data():
             cases.append(Case(
                 id=f'CS-2024-{i:04d}',
                 customer_name=customer.customer_name,
-                customer_id=customer.id,
+                customer_account_number=customer.account_number,
                 invoice_amount=invoice_amount,
                 recovered_amount=recovered_amount,
                 aging_days=aging_days,
@@ -161,7 +178,7 @@ def seed_data():
                 assigned_agency_id=agency_id,
                 assigned_agency_reason=assigned_reason,
                 status=status,
-                account_number=f'{customer.id.split("-")[1]}-{random.randint(100000, 999999)}',
+                account_number=f'{customer.account_number.split("-")[1]}-{random.randint(100000, 999999)}',
                 due_date=due_date.strftime('%Y-%m-%d'),
                 last_contact=(fake.date_between(start_date=f'-{last_contact_days}d', end_date='today')).strftime('%Y-%m-%d'),
                 created_at=created_time.strftime('%Y-%m-%dT%H:%M:%SZ'),

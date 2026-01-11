@@ -5,7 +5,7 @@ You will receive:
 1. A CSV of cases with these fields:
    - id: Case identifier (e.g., "CS-2024-0001")
    - customer_name: Name of the customer
-   - customer_id: Customer identifier
+   - customer_account_number: Customer identifier
    - invoice_amount: Outstanding debt amount in USD
    - recovered_amount: Amount already recovered
    - aging_days: Days since invoice due date

@@ -16,7 +16,7 @@ def get_customers():
     # Filter by agency if specified (for agency employees)
     if agency_id:
         # Get customers who have cases assigned to this agency
-        query = query.join(Case, Customer.id == Case.customer_id).filter(
+        query = query.join(Case, customer.customer_account_number == Case.customer_account_number).filter(
             Case.assigned_agency_id == agency_id
         ).distinct()
 
@@ -38,22 +38,22 @@ def get_customers():
         'current_page': page
     })
 
-@customers_bp.route('/<customer_id>', methods=['GET'])
-def get_customer(customer_id):
-    customer = Customer.query.get(customer_id)
+@customers_bp.route('/<customer_account_number>', methods=['GET'])
+def get_customer(customer_account_number):
+    customer = Customer.query.get(customer_account_number)
     if not customer:
         return jsonify({'error': 'Customer not found'}), 404
     return jsonify(customer.to_dict())
 
-@customers_bp.route('/<customer_id>/cases', methods=['GET'])
-def get_customer_cases(customer_id):
-    customer = Customer.query.get(customer_id)
+@customers_bp.route('/<customer_account_number>/cases', methods=['GET'])
+def get_customer_cases(customer_account_number):
+    customer = Customer.query.get(customer_account_number)
     if not customer:
         return jsonify({'error': 'Customer not found'}), 404
         
-    # In our model, Case links to Customer via customer_id (if we added that foreign key), 
+    # In our model, Case links to Customer via customer_account_number (if we added that foreign key), 
     # but initially we only had customer_name strings in mock data. 
-    # The Case model in models.py has customer_id now.
+    # The Case model in models.py has customer_account_number now.
     
-    cases = Case.query.filter_by(customer_id=customer_id).all()
+    cases = Case.query.filter_by(customer_account_number=customer_account_number).all()
     return jsonify([c.to_dict() for c in cases])

@@ -48,6 +48,7 @@ def create_app():
     app.register_blueprint(customers_bp, url_prefix='/api/customers')
     app.register_blueprint(dashboard_bp, url_prefix='/api') # /api/stats, /api/performance etc
     app.register_blueprint(n8n_bp, url_prefix='/api/n8n')
+    app.register_blueprint(actions_bp, url_prefix='/api/actions')
 
     @app.route('/health')
     def health_check():

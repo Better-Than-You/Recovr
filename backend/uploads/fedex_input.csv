@@ -1,0 +1,5 @@
+account_number,customer_name,account_type,customer_tier,historical_health,due_date,amount_due,service_type,region,customer_email,invoice_number
+ACCT-1001,Global Logistics Inc,Corporate,Platinum,Good,14-11-2025,450.25,Express,US,billing@globallog.com,INV-99201
+ACCT-1002,Sarah Jenkins,Individual,Standard,Fair,01-12-2025,120,Ground,US,s.jenkins@email.com,INV-99281
+ACCT-1003,TechLogistics Corp,Corporate,Gold,Poor,20-10-2025,1200,Freight,EMEA,finance@techlog.io,INV-2023-04
+ACCT-1004,David Miller,Individual,Standard,Good,10-12-2025,89.5,Express,US,david.m@personal.com,INV-88210
