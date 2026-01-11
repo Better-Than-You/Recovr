@@ -48,18 +48,16 @@ class Agency(db.Model):
         }
 
 class Customer(db.Model):
-    id = db.Column(db.String(50), primary_key=True)
-    account_number = db.Column(db.String(50), nullable=False)
-    customer_name = db.Column(db.String(100), nullable=False)
+    account_number = db.Column(db.String(50), nullable=False, primary_key=True)
     account_type = db.Column(db.String(50))
+    customer_name = db.Column(db.String(100), nullable=False)
+    customer_email = db.Column(db.String(120))
     customer_tier = db.Column(db.String(50))
     historical_health = db.Column(db.String(50))
-    invoice_number = db.Column(db.String(50))
     due_date = db.Column(db.String(20))
     amount_due = db.Column(db.Float)
     service_type = db.Column(db.String(100))
     region = db.Column(db.String(100))
-    customer_email = db.Column(db.String(120))
     
     cases = db.relationship('Case', backref='customer_rel', lazy=True)
 
@@ -80,24 +78,23 @@ class Customer(db.Model):
         }
 
 class Case(db.Model):
-    id = db.Column(db.String(50), primary_key=True) # caseId, aka invoiceId
-    customer_name = db.Column(db.String(100), nullable=False) # for the sake of frontend
-    customer_id = db.Column(db.String(50), db.ForeignKey('customer.id'), nullable=True) # customer table primary key
+    id = db.Column(db.String(50), primary_key=True)
+    customer_name = db.Column(db.String(100), nullable=False)
+    customer_account_number = db.Column(db.String(50), db.ForeignKey('customer.account_number'), nullable=True)
+    account_number = db.Column(db.String(50))
     invoice_amount = db.Column(db.Float, nullable=False)
     recovered_amount = db.Column(db.Float, nullable=False)
     aging_days = db.Column(db.Integer)
     recovery_probability = db.Column(db.Float)
     assigned_agency_id = db.Column(db.String(50), db.ForeignKey('agency.id'), nullable=True)
     assigned_agency_reason = db.Column(db.String(400), nullable=True, default=None)
-    status = db.Column(db.String(20), default='pending') # pending, assigned, in_progress, resolved, legal
-    account_number = db.Column(db.String(50))
+    status = db.Column(db.String(20), default='pending')
     due_date = db.Column(db.String(20))
     last_contact = db.Column(db.String(20))
     created_at = db.Column(db.String(30))
     auto_assign_after_hours = db.Column(db.Integer, nullable=True)
-
     timeline_events = db.relationship('TimelineEvent', backref='case', lazy=True, cascade="all, delete-orphan")
-
+    
     def to_dict(self):
         return {
             'id': self.id,
@@ -116,7 +113,7 @@ class Case(db.Model):
             'lastContact': self.last_contact,
             'createdAt': self.created_at,
             'autoAssignAfterHours': self.auto_assign_after_hours,
-            'customerId': self.customer_id
+            'customerId': self.customer_account_number
         }
 
 class TimelineEvent(db.Model):

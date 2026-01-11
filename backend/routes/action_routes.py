@@ -88,7 +88,7 @@ def upload_cases():
                 return
             
             # Send CSV data to n8n webhook asynchronously (non-blocking)
-            n8n_url = os.getenv('N8N_WEBHOOK_URL')
+            n8n_url = os.getenv('N8N_WEBHOOK_URL' or 'http://localhost:5678/webhook-test/process-cases')
             print(f"N8N_WEBHOOK_URL from env: {n8n_url}")
             
             if n8n_url:
@@ -146,7 +146,7 @@ def upload_cases():
                     case = Case(
                         id=str(uuid.uuid4()),
                         invoice_number=row.get('invoice_number', f'INV-{uuid.uuid4().hex[:8]}'),
-                        customer_id=customer.id,
+                        customer_account_number=customer.account_number,
                         amount=float(row.get('amount', 0)),
                         aging_days=int(row.get('aging_days', 0)),
                         status=row.get('status', 'new'),

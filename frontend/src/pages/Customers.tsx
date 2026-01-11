@@ -181,9 +181,9 @@ export function Customers() {
         ) : (
           filteredCustomers.map((customer) => (
             <Card 
-              key={customer.id}
+              key={customer.customer_account_number}
               className="cursor-pointer transition-all hover:shadow-md hover:border-slate-300"
-              onClick={() => navigate(`/customer/${customer.id}`)}
+              onClick={() => navigate(`/customer/${customer.customer_account_number}`)}
             >
               <CardContent className="p-6">
                 <div className="flex items-start justify-between">

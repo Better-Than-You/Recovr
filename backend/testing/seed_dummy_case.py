@@ -36,13 +36,11 @@ def seed_dummy_case():
         if not customers:
             print("No customers found. Creating a sample customer...")
             customer = Customer(
-                id='CUST-001',
                 account_number='ACC-12345',
                 customer_name='Acme Corporation',
                 account_type='Premium',
                 customer_tier='Gold',
                 historical_health='Good',
-                invoice_number='INV-789456',
                 due_date='2024-12-01',
                 amount_due=25000.00,
                 service_type='Express Shipping',
@@ -71,7 +69,7 @@ def seed_dummy_case():
         dummy_case = Case(
             id=case_id,
             customer_name=customer.customer_name,
-            customer_id=customer.id,
+            customer_account_number=customer.account_number,
             invoice_amount=25000.00,
             recovered_amount=22500.00,
             aging_days=45,
@@ -119,7 +117,7 @@ def seed_dummy_case():
             event_type='email',
             title='Payment Reminder Sent',
             description=f'Initial payment reminder email sent to {customer.customer_name} regarding outstanding invoice.',
-            meta_email_subject=f'Payment Reminder - Invoice {customer.invoice_number}',
+            meta_email_subject=f'Payment Reminder - Account {customer.account_number}',
             meta_email_content='Dear valued customer, this is a friendly reminder that your invoice is currently past due. We would appreciate your prompt attention to this matter. Please contact us to discuss payment options or if you have any questions.'
         ))
         
